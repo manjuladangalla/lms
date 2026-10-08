@@ -1,0 +1,35 @@
+# LMS production reverse proxy (Caddy)
+#
+#   {$DOMAIN}   -> real Let's Encrypt certificate (set DOMAIN=yourdomain.com in .env)
+#   any other host (bare droplet IP) -> internal self-signed certificate, still HTTPS
+#   plain HTTP  -> always redirected to HTTPS
+#
+# The frontend is built with the relative API url /api/v1, so the app works on any
+# domain or IP without rebuilding.
+
+(lms_handlers) {
+	encode gzip
+
+	@api path /api /api/* /media /media/* /health
+
+	handle @api {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		reverse_proxy web:80
+	}
+}
+
+https://{$DOMAIN} {
+	import lms_handlers
+}
+
+:443 {
+	tls internal
+	import lms_handlers
+}
+
+:80 {
+	redir https://{http.request.host}{uri} permanent
+}

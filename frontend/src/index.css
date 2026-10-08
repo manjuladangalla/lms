@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== NORMAL (default, modern indigo) ===== */
+:root,
+[data-theme="normal"] {
+  --bg: 244 247 255;
+  --surface: 255 255 255;
+  --surface2: 238 242 255;
+  --border: 226 232 240;
+  --ink: 15 23 42;
+  --muted: 100 116 139;
+  --primary: 37 99 235;
+  --primary2: 79 70 229;
+  --accent: 14 165 233;
+  --success: 22 163 74;
+  --warning: 217 119 6;
+  --danger: 220 38 38;
+}
+
+/* ===== LIGHT (clean white minimal) ===== */
+[data-theme="light"] {
+  --bg: 250 250 250;
+  --surface: 255 255 255;
+  --surface2: 244 244 245;
+  --border: 228 228 231;
+  --ink: 9 9 11;
+  --muted: 113 113 122;
+  --primary: 13 148 136;
+  --primary2: 8 145 178;
+  --accent: 5 150 105;
+  --success: 22 163 74;
+  --warning: 202 138 4;
+  --danger: 220 38 38;
+}
+
+/* ===== DARK ===== */
+[data-theme="dark"] {
+  --bg: 9 9 11;
+  --surface: 24 24 27;
+  --surface2: 39 39 47;
+  --border: 63 63 70;
+  --ink: 244 244 245;
+  --muted: 161 161 170;
+  --primary: 96 165 250;
+  --primary2: 129 140 248;
+  --accent: 45 212 191;
+  --success: 74 222 128;
+  --warning: 251 191 36;
+  --danger: 248 113 113;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-bg text-ink font-sans antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+@layer components {
+  .container-x {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+  .card {
+    @apply rounded-2xl border border-border bg-surface shadow-card;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn border border-transparent bg-gradient-to-r from-primary to-primary2 text-white hover:opacity-90;
+  }
+  .btn-ghost {
+    @apply btn border border-border bg-surface text-ink hover:bg-surface2;
+  }
+  .btn-danger {
+    @apply btn border border-transparent bg-danger text-white hover:opacity-90;
+  }
+  .input {
+    @apply w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-muted;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+  .nav-link {
+    @apply rounded-lg px-3 py-2 text-sm font-medium text-muted transition hover:bg-surface2 hover:text-ink;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
