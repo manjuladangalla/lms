@@ -1,7 +1,7 @@
 # LMS production reverse proxy (Caddy)
 #
 #   {$DOMAIN}   -> real Let's Encrypt certificate (set DOMAIN=yourdomain.com in .env)
-#   any other host (bare droplet IP) -> internal self-signed certificate, still HTTPS
+#   any other host, and the bare droplet IP -> internal self-signed certificate
 #   plain HTTP  -> always redirected to HTTPS
 #
 # The frontend is built with the relative API url /api/v1, so the app works on any
@@ -25,8 +25,14 @@ https://{$DOMAIN} {
 	import lms_handlers
 }
 
+# Everything else (droplet IP, unknown hostnames): internal certificate.
+# on_demand so a certificate is issued for whichever SNI the client sends;
+# connections without SNI (browsers typing the IP) use the default certificate.
 :443 {
-	tls internal
+	tls {
+		issuer internal
+		on_demand
+	}
 	import lms_handlers
 }
 
