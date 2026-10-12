@@ -24,6 +24,7 @@ export interface Tokens {
 
 export interface InstituteSettings {
   site_name: string;
+  short_name?: string;
   tagline: string;
   logo_url?: string | null;
   favicon_url?: string | null;

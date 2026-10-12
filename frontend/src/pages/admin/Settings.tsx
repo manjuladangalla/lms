@@ -96,8 +96,11 @@ export default function AdminSettings() {
           <Image className="h-5 w-5 text-primary" /> Identity
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Institute / Site name" hint="Shown in navbar, footer, titles and certificates">
+          <Field label="Institute / Site name (full)" hint="Full name — certificates, copyright, emails and page titles">
             <Input value={form.site_name} onChange={(e) => setForm({ ...form, site_name: e.target.value })} />
+          </Field>
+          <Field label="Short name (sidebar)" hint="Abbreviation shown in the side menu, e.g. AIL">
+            <Input value={form.short_name || ""} maxLength={20} onChange={(e) => setForm({ ...form, short_name: e.target.value })} />
           </Field>
           <Field label="Tagline">
             <Input value={form.tagline || ""} onChange={(e) => setForm({ ...form, tagline: e.target.value })} />

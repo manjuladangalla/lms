@@ -232,9 +232,10 @@ export default function Home() {
           heroSlider ? "bg-slate-900 text-white" : "bg-gradient-to-br from-bg via-surface to-surface2"
         }`}
       >
-        {heroSlider ? <HeroSlider banners={banners} /> : <LearnFlowDecor />}
+        {heroSlider && <HeroSlider banners={banners} />}
+        <LearnFlowDecor className={heroSlider ? "opacity-70" : ""} />
         <div className="container-x relative z-10 py-20 lg:py-28">
-          <div className="max-w-3xl animate-fadeUp">
+          <div className="max-w-3xl animate-fadeUp lg:max-w-[48%]">
             <span className={`badge ${heroSlider ? "bg-white/15 text-white" : "bg-primary/10 text-primary"}`}>
               <Sparkles className="h-3.5 w-3.5" /> {settings?.tagline || "Learn. Grow. Get Certified."}
             </span>
@@ -342,7 +343,7 @@ export default function Home() {
         </section>
       )}
 
-      <section className="container-x pb-16">
+      <section className="container-x mt-8 pb-16">
         <div className="grid gap-8 rounded-3xl border border-border bg-surface2/60 p-8 sm:p-10 lg:grid-cols-2 lg:items-center">
           <div>
             <span className="badge bg-primary/10 text-primary">

@@ -40,11 +40,13 @@ function splitName(name: string): [string, string] {
   return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
 }
 
-export function Logo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
+export function Logo({ size = "md", variant = "full" }: { size?: "sm" | "md" | "lg"; variant?: "full" | "short" }) {
   const { settings } = useAuth();
   const logo = publicFileUrl(settings?.logo_url);
-  const siteName = settings?.site_name || "LMS Institute";
-  const [line1, line2] = splitName(siteName);
+  const fullName = settings?.site_name || "LMS Institute";
+  const short = (settings?.short_name || "").trim();
+  const siteName = variant === "short" && short ? short : fullName;
+  const [line1, line2] = variant === "short" && short ? [short, ""] : splitName(fullName);
   const dim = size === "lg" ? "h-14 w-14" : size === "sm" ? "h-9 w-9" : "h-11 w-11";
   const l1 = size === "lg" ? "text-xl" : size === "sm" ? "text-[0.82rem]" : "text-[0.95rem]";
   const l2 = size === "lg" ? "text-[0.72rem]" : "text-[0.62rem]";

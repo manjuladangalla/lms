@@ -15,6 +15,7 @@ router = APIRouter(tags=["site"])
 SETTINGS_KEY = "settings:public"
 DEFAULT_SETTINGS = {
     "site_name": "LMS Institute",
+    "short_name": "",
     "tagline": "Learn. Grow. Get Certified.",
     "logo_url": None,
     "favicon_url": None,

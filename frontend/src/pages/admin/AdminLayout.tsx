@@ -51,7 +51,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-bg">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-border bg-surface lg:flex">
         <div className="flex h-16 items-center border-b border-border px-5">
-          <Logo size="sm" />
+          <Logo size="sm" variant="short" />
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
           {links

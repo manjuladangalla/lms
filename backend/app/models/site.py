@@ -41,6 +41,7 @@ class CertificateTemplateIn(BaseModel):
 
 class SettingsIn(BaseModel):
     site_name: str = "LMS Institute"
+    short_name: str = ""
     tagline: str = ""
     logo_url: str | None = None
     favicon_url: str | None = None
