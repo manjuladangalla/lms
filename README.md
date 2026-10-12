@@ -197,7 +197,7 @@ Plans are **discounts, not all-access passes** — a member still buys each cour
 
 ## Home banners (colourful carousel)
 
-**Admin → Banners**: title, subtitle, CTA text + link, 8 gradient themes (ocean/sunset/violet/…), optional background image, sort order, active toggle. The homepage hero shows an auto-rotating carousel (`GET /banners`, publicly cached, refreshed live via WebSocket).
+**Admin → Banners**: title, subtitle, CTA text + link, 8 gradient themes (ocean/sunset/violet/.), optional background image, sort order, active toggle. The homepage shows an auto-rotating banner card (`GET /banners`, publicly cached, refreshed live via WebSocket) - the card is always the gradient with its text, never the image. Any active banner with an uploaded image additionally drives a **full-width image slider behind the home-page hero header** (6s autoplay, arrows, dots, dark overlay so the title stays readable): uploaded images appear in that header slider only; with none uploaded the hero falls back to the decorative gradient.
 
 ## Counselling sessions & booking
 

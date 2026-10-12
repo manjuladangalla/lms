@@ -44,6 +44,75 @@ function ProgramCard({ p }: { p: Programme }) {
   );
 }
 
+function HeroSlider({ banners }: { banners: Banner[] }) {
+  const slides = banners.filter((b) => b.image_url);
+  const [idx, setIdx] = useState(0);
+  const paused = useRef(false);
+
+  useEffect(() => {
+    if (slides.length < 2) return;
+    const t = setInterval(() => {
+      if (paused.current) return;
+      setIdx((i) => (i + 1) % slides.length);
+    }, 6000);
+    return () => clearInterval(t);
+  }, [slides.length]);
+
+  if (slides.length === 0) return null;
+  const current = Math.min(idx, slides.length - 1);
+  const go = (d: number) => setIdx((i) => (i + d + slides.length) % slides.length);
+
+  return (
+    <div
+      className="absolute inset-0 bg-slate-900"
+      onMouseEnter={() => (paused.current = true)}
+      onMouseLeave={() => (paused.current = false)}
+    >
+      {slides.map((s, i) => (
+        <img
+          key={s.id}
+          src={publicFileUrl(s.image_url!)!}
+          alt=""
+          aria-hidden="true"
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+            i === current ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      ))}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/55 to-black/25" />
+
+      {slides.length > 1 && (
+        <>
+          <button
+            aria-label="Previous slide"
+            className="absolute left-4 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-white/15 p-2.5 text-white backdrop-blur transition hover:bg-white/30 sm:block"
+            onClick={() => go(-1)}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            aria-label="Next slide"
+            className="absolute right-4 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-white/15 p-2.5 text-white backdrop-blur transition hover:bg-white/30 sm:block"
+            onClick={() => go(1)}
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+          <div className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-2">
+            {slides.map((s, i) => (
+              <button
+                key={s.id}
+                aria-label={`Slide ${i + 1}`}
+                className={`h-2 rounded-full transition-all ${i === current ? "w-6 bg-white" : "w-2 bg-white/50"}`}
+                onClick={() => setIdx(i)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function BannerCarousel({ banners }: { banners: Banner[] }) {
   const [idx, setIdx] = useState(0);
   const paused = useRef(false);
@@ -71,13 +140,6 @@ function BannerCarousel({ banners }: { banners: Banner[] }) {
       <div
         className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${theme.className} p-8 text-white shadow-soft sm:p-12`}
       >
-        {b.image_url && (
-          <img
-            src={publicFileUrl(b.image_url)!}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover opacity-30"
-          />
-        )}
         <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/20 blur-3xl" />
         <div className="relative flex min-h-[160px] max-w-2xl flex-col justify-center">
           <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur">
@@ -161,19 +223,29 @@ export default function Home() {
     if (event === "banners.changed") api.get<Banner[]>("/banners").then(setBanners).catch(() => {});
   });
 
+  const heroSlider = banners.some((b) => b.image_url);
+
   return (
     <div>
-      <section className="relative overflow-hidden border-b border-border bg-gradient-to-br from-bg via-surface to-surface2">
-        <HeroDecor variant="hero" />
-        <div className="container-x relative py-20 lg:py-28">
+      <section
+        className={`relative overflow-hidden border-b border-border ${
+          heroSlider ? "bg-slate-900 text-white" : "bg-gradient-to-br from-bg via-surface to-surface2"
+        }`}
+      >
+        {heroSlider ? <HeroSlider banners={banners} /> : <HeroDecor variant="hero" />}
+        <div className="container-x relative z-10 py-20 lg:py-28">
           <div className="max-w-3xl animate-fadeUp">
-            <span className="badge bg-primary/10 text-primary">
+            <span className={`badge ${heroSlider ? "bg-white/15 text-white" : "bg-primary/10 text-primary"}`}>
               <Sparkles className="h-3.5 w-3.5" /> {settings?.tagline || "Learn. Grow. Get Certified."}
             </span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
               {settings?.home_hero_title || "Build Skills That Matter"}
             </h1>
-            <p className="mt-5 max-w-2xl text-lg text-muted">
+            <p
+              className={`mt-5 max-w-2xl text-lg ${
+                heroSlider ? "text-white/80" : "text-muted"
+              }`}
+            >
               {settings?.home_hero_subtitle ||
                 "Explore classes, courses and diploma programmes with expert lecturers and earn verified digital certificates."}
             </p>
