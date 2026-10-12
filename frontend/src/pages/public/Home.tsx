@@ -4,7 +4,7 @@ import { ArrowRight, Award, BookOpen, BadgeCheck, CalendarClock, ChevronLeft, Ch
 import { api, publicFileUrl } from "../../lib/api";
 import { bannerTheme } from "../../lib/banners";
 import { useRealtime } from "../../lib/realtime";
-import { HeroDecor } from "../../components/HeroDecor";
+import { LearnFlowDecor } from "../../components/LearnFlowDecor";
 import type { Banner, CounsellingSlot, MembershipPlan, Programme } from "../../lib/types";
 import { useAuth } from "../../store/auth";
 import { Card, LoadingBlock } from "../../components/ui";
@@ -232,7 +232,7 @@ export default function Home() {
           heroSlider ? "bg-slate-900 text-white" : "bg-gradient-to-br from-bg via-surface to-surface2"
         }`}
       >
-        {heroSlider ? <HeroSlider banners={banners} /> : <HeroDecor variant="hero" />}
+        {heroSlider ? <HeroSlider banners={banners} /> : <LearnFlowDecor />}
         <div className="container-x relative z-10 py-20 lg:py-28">
           <div className="max-w-3xl animate-fadeUp">
             <span className={`badge ${heroSlider ? "bg-white/15 text-white" : "bg-primary/10 text-primary"}`}>
