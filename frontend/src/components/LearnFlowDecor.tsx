@@ -15,17 +15,17 @@ export function LearnFlowDecor({ variant = "hero", className = "" }: { variant?:
   const node = (x: number, y: number, label: string, sub: string, begin: string, children: ReactNode, key: string, accent = false) => (
     <g key={key}>
       <animate attributeName="opacity" values="0;1;1;1;0" keyTimes="0;0.05;0.72;0.9;1" dur="10s" begin={begin} repeatCount="indefinite" />
-      <circle cx={x} cy={y} r={42} fill={accent ? "rgb(var(--accent))" : "rgb(var(--primary))"} fillOpacity={accent ? "0.13" : "0.10"} />
-      <circle cx={x} cy={y} r={32} fill="none" stroke="currentColor" strokeOpacity="0.38" strokeWidth="1.5" />
-      <circle cx={x} cy={y} r={24} fill="none" stroke="currentColor" strokeOpacity="0.22" strokeWidth="1" strokeDasharray="3 7" />
-      <circle cx={x + 28} cy={y - 28} r={2.6} fill="rgb(var(--accent))" fillOpacity="0.7" />
+      <circle cx={x} cy={y} r={42} fill={accent ? "rgb(var(--accent))" : "rgb(var(--primary))"} fillOpacity={accent ? "0.16" : "0.12"} />
+      <circle cx={x} cy={y} r={32} fill="none" stroke="currentColor" strokeOpacity="0.45" strokeWidth="1.5" />
+      <circle cx={x} cy={y} r={24} fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1" strokeDasharray="3 7" />
+      <circle cx={x + 28} cy={y - 28} r={2.6} fill="rgb(var(--accent))" fillOpacity="0.8" />
       <g transform={`translate(${x - 13} ${y - 21})`} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" fill="none">
         {children}
       </g>
-      <text x={x} y={y + 62} textAnchor="middle" className="font-bold" fontSize="13.5" fill="currentColor" fillOpacity="0.9">
+      <text x={x} y={y + 62} textAnchor="middle" className="font-bold" fontSize="13.5" fill="currentColor" fillOpacity="0.95">
         {label}
       </text>
-      <text x={x} y={y + 79} textAnchor="middle" fontSize="11" fill="currentColor" fillOpacity="0.55">
+      <text x={x} y={y + 79} textAnchor="middle" fontSize="11" fill="currentColor" fillOpacity="0.6">
         {sub}
       </text>
     </g>
@@ -33,13 +33,13 @@ export function LearnFlowDecor({ variant = "hero", className = "" }: { variant?:
 
   const pulse = (pathId: string, dur: string, begin: string, key: string) => (
     <g key={key}>
-      <circle r="13" fill="rgb(var(--accent))" fillOpacity="0.22">
+      <circle r="15" fill="rgb(var(--accent))" fillOpacity="0.3">
         <animateMotion dur={dur} begin={begin} repeatCount="indefinite">
           <mpath xlinkHref={`#${pathId}`} />
         </animateMotion>
-        <animate attributeName="opacity" values="0;0.55;0.55;0" keyTimes="0;0.05;0.9;1" dur={dur} begin={begin} repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;0.7;0.7;0" keyTimes="0;0.05;0.9;1" dur={dur} begin={begin} repeatCount="indefinite" />
       </circle>
-      <circle r="6.5" fill="rgb(var(--accent))">
+      <circle r="7" fill="rgb(var(--accent))">
         <animateMotion dur={dur} begin={begin} repeatCount="indefinite">
           <mpath xlinkHref={`#${pathId}`} />
         </animateMotion>
@@ -55,14 +55,14 @@ export function LearnFlowDecor({ variant = "hero", className = "" }: { variant?:
   );
 
   const caption = (x: number, y: number, text: string, begin: string, key: string) => (
-    <text key={key} x={x} y={y} className="font-bold" fontSize="11.5" letterSpacing="2.2" fill="currentColor" fillOpacity="0.45">
+    <text key={key} x={x} y={y} className="font-bold" fontSize="11.5" letterSpacing="2.2" fill="currentColor" fillOpacity="0.5">
       {text}
       <animate attributeName="opacity" values="0;0.45;0.45;0.45;0" keyTimes="0;0.05;0.72;0.9;1" dur="10s" begin={begin} repeatCount="indefinite" />
     </text>
   );
 
   return (
-    <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`} aria-hidden="true">
+    <div className={`pointer-events-none absolute inset-0 overflow-hidden text-white ${className}`} aria-hidden="true">
       {/* soft blobs */}
       <svg className="absolute -right-24 -top-28 h-[24rem] w-[24rem] text-primary" viewBox="0 0 200 200" fill="none">
         <defs>
@@ -94,23 +94,23 @@ export function LearnFlowDecor({ variant = "hero", className = "" }: { variant?:
       </svg>
 
       <svg
-        className={`absolute inset-y-0 right-0 h-full ${compact ? "w-full opacity-90" : "hidden w-[52%] lg:block"} text-primary`}
+        className={`absolute inset-y-0 right-0 h-full ${compact ? "w-full opacity-90" : "w-full lg:w-[52%]"}`}
         viewBox="0 0 900 560"
         fill="none"
         preserveAspectRatio="xMidYMid meet"
       >
         <defs>
           <linearGradient id={`${id}-stroke-a`} x1="0" y1="0" x2="1" y2="0.4">
-            <stop offset="0%" stopColor="currentColor" stopOpacity="0.55" />
-            <stop offset="55%" stopColor="rgb(var(--primary2))" stopOpacity="0.7" />
-            <stop offset="100%" stopColor="rgb(var(--accent))" stopOpacity="0.75" />
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.6" />
+            <stop offset="55%" stopColor="rgb(var(--primary2))" stopOpacity="0.75" />
+            <stop offset="100%" stopColor="rgb(var(--accent))" stopOpacity="0.85" />
           </linearGradient>
           <linearGradient id={`${id}-stroke-b`} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="currentColor" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="rgb(var(--primary2))" stopOpacity="0.65" />
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="rgb(var(--primary2))" stopOpacity="0.7" />
           </linearGradient>
           <marker id={`${id}-arrow`} viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M0 1 L9 5 L0 9 z" fill="currentColor" fillOpacity="0.45" />
+            <path d="M0 1 L9 5 L0 9 z" fill="currentColor" fillOpacity="0.5" />
           </marker>
         </defs>
 
@@ -119,7 +119,7 @@ export function LearnFlowDecor({ variant = "hero", className = "" }: { variant?:
           <animateTransform attributeName="transform" type="translate" values="0 0; 0 -7; 0 0" dur="9s" repeatCount="indefinite" />
 
           {/* faint hand-off into counselling */}
-          <path d="M110 352 C 108 398, 118 430, 148 442" stroke="currentColor" strokeOpacity="0.16" strokeWidth="1.5" strokeDasharray="4 9" fill="none" />
+          <path d="M110 352 C 108 398, 118 430, 148 442" stroke="currentColor" strokeOpacity="0.2" strokeWidth="1.5" strokeDasharray="4 9" fill="none" />
 
           {/* --- student journey: winding curve --- */}
           <path
@@ -185,20 +185,20 @@ export function LearnFlowDecor({ variant = "hero", className = "" }: { variant?:
             <animate attributeName="opacity" values="0;1;1;1;0" keyTimes="0;0.05;0.72;0.9;1" dur="10s" begin="1.8s" repeatCount="indefinite" />
             <g transform="translate(545 138)">
               <animateTransform attributeName="transform" type="scale" values="1;1.07;1" dur="2.4s" repeatCount="indefinite" additive="sum" />
-              <circle cx="0" cy="0" r="42" fill="rgb(var(--accent))" fillOpacity="0.13" />
-              <circle cx="0" cy="0" r="32" fill="none" stroke="currentColor" strokeOpacity="0.42" strokeWidth="1.5" />
-              <circle cx="0" cy="0" r="24" fill="none" stroke="currentColor" strokeOpacity="0.24" strokeWidth="1" strokeDasharray="3 7" />
-              <circle cx="28" cy="-28" r="2.6" fill="rgb(var(--accent))" fillOpacity="0.7" />
+              <circle cx="0" cy="0" r="42" fill="rgb(var(--accent))" fillOpacity="0.16" />
+              <circle cx="0" cy="0" r="32" fill="none" stroke="currentColor" strokeOpacity="0.5" strokeWidth="1.5" />
+              <circle cx="0" cy="0" r="24" fill="none" stroke="currentColor" strokeOpacity="0.28" strokeWidth="1" strokeDasharray="3 7" />
+              <circle cx="28" cy="-28" r="2.6" fill="rgb(var(--accent))" fillOpacity="0.8" />
               <g transform="translate(-13 -21)" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" fill="none">
                 <rect x="1" y="2" width="24" height="16" rx="2.5" />
                 <path d="M5.5 7h9M5.5 11h6" />
                 <circle cx="20" cy="19" r="4.4" />
                 <path d="M18.2 22.6L17.6 27l2.4-1.2 2.4 1.2-.6-4.4" />
               </g>
-              <text x="0" y="62" textAnchor="middle" className="font-bold" fontSize="13.5" fill="currentColor" fillOpacity="0.9">
+              <text x="0" y="62" textAnchor="middle" className="font-bold" fontSize="13.5" fill="currentColor" fillOpacity="0.95">
                 Certificate
               </text>
-              <text x="0" y="79" textAnchor="middle" fontSize="11" fill="currentColor" fillOpacity="0.55">
+              <text x="0" y="79" textAnchor="middle" fontSize="11" fill="currentColor" fillOpacity="0.6">
                 QR-stamped PDF issued
               </text>
             </g>
@@ -259,9 +259,9 @@ export function LearnFlowDecor({ variant = "hero", className = "" }: { variant?:
           )}
 
           {/* floating accents */}
-          <path d="M420 280 v14 M413 287 h14" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.35" className="animate-float" />
-          <circle cx="660" cy="330" r="7" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.3" className="animate-floatSlow" />
-          <path d="M860 120 l3 6.4 6.7.9 -4.8 4.6 1.1 6.6 -6-3 -6 3 1.1-6.6 -4.8-4.6 6.7-.9 z" fill="currentColor" fillOpacity="0.25" className="animate-float" />
+          <path d="M420 280 v14 M413 287 h14" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.4" className="animate-float" />
+          <circle cx="660" cy="330" r="7" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.35" className="animate-floatSlow" />
+          <path d="M860 120 l3 6.4 6.7.9 -4.8 4.6 1.1 6.6 -6-3 -6 3 1.1-6.6 -4.8-4.6 6.7-.9 z" fill="currentColor" fillOpacity="0.3" className="animate-float" />
         </g>
       </svg>
     </div>

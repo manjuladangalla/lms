@@ -36,7 +36,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-bg">
       <header className="sticky top-0 z-40 border-b border-border bg-surface/90 backdrop-blur">
         <div className="container-x flex h-16 items-center justify-between">
-          <Logo />
+          <Logo variant="short" />
           <div className="flex items-center gap-2">
             <ThemeSwitcher compact />
             <Link to="/" className="nav-link">Home</Link>

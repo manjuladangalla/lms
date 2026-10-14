@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Award, BookOpen, BadgeCheck, CalendarClock, ChevronLeft, ChevronRight, HeartHandshake, Lock, Percent, Users, Sparkles, ShieldCheck, Video } from "lucide-react";
+import { ArrowRight, Award, BookOpen, BadgeCheck, CalendarClock, ChevronLeft, ChevronRight, HeartHandshake, Lock, Percent, Play, Users, Sparkles, ShieldCheck, Video, X } from "lucide-react";
 import { api, publicFileUrl } from "../../lib/api";
 import { bannerTheme } from "../../lib/banners";
 import { useRealtime } from "../../lib/realtime";
@@ -9,12 +9,28 @@ import type { Banner, CounsellingSlot, MembershipPlan, Programme } from "../../l
 import { useAuth } from "../../store/auth";
 import { Card, LoadingBlock } from "../../components/ui";
 
-function ProgramCard({ p }: { p: Programme }) {
+function ProgramCard({ p, onPreview }: { p: Programme; onPreview?: (p: Programme) => void }) {
   return (
     <Link to={`/programmes/${p.slug}`} className="card group overflow-hidden transition hover:-translate-y-1 hover:shadow-soft">
       <div className="relative h-40 bg-gradient-to-br from-primary/80 via-primary2/70 to-accent/70">
         {p.cover_image_url && (
           <img src={publicFileUrl(p.cover_image_url)!} alt="" className="h-full w-full object-cover" />
+        )}
+        {p.intro_video_url && onPreview && (
+          <button
+            type="button"
+            aria-label={`Play ${p.title} intro video`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onPreview(p);
+            }}
+            className="absolute inset-0 grid place-items-center bg-black/25 transition hover:bg-black/40"
+          >
+            <span className="grid h-14 w-14 place-items-center rounded-full bg-black/55 text-white shadow-soft backdrop-blur transition group-hover:bg-primary">
+              <Play className="ml-0.5 h-6 w-6" />
+            </span>
+          </button>
         )}
         <div className="absolute left-3 top-3 flex gap-2">
           <span className="badge bg-black/40 text-white backdrop-blur">
@@ -196,6 +212,7 @@ export default function Home() {
   const [plans, setPlans] = useState<MembershipPlan[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [counselling, setCounselling] = useState<CounsellingSlot[]>([]);
+  const [preview, setPreview] = useState<Programme | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -227,26 +244,18 @@ export default function Home() {
 
   return (
     <div>
-      <section
-        className={`relative overflow-hidden border-b border-border ${
-          heroSlider ? "bg-slate-900 text-white" : "bg-gradient-to-br from-bg via-surface to-surface2"
-        }`}
-      >
+      <section className="relative overflow-hidden border-b border-border bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white">
         {heroSlider && <HeroSlider banners={banners} />}
-        <LearnFlowDecor className={heroSlider ? "opacity-70" : ""} />
-        <div className="container-x relative z-10 py-20 lg:py-28">
+        <LearnFlowDecor className={`hidden lg:block ${heroSlider ? "opacity-90" : ""}`} />
+        <div className="container-x relative z-10 py-16 lg:py-28">
           <div className="max-w-3xl animate-fadeUp lg:max-w-[48%]">
-            <span className={`badge ${heroSlider ? "bg-white/15 text-white" : "bg-primary/10 text-primary"}`}>
+            <span className="badge bg-white/15 text-white">
               <Sparkles className="h-3.5 w-3.5" /> {settings?.tagline || "Learn. Grow. Get Certified."}
             </span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
               {settings?.home_hero_title || "Build Skills That Matter"}
             </h1>
-            <p
-              className={`mt-5 max-w-2xl text-lg ${
-                heroSlider ? "text-white/80" : "text-muted"
-              }`}
-            >
+            <p className="mt-5 max-w-2xl text-lg text-white/80">
               {settings?.home_hero_subtitle ||
                 "Explore classes, courses and diploma programmes with expert lecturers and earn verified digital certificates."}
             </p>
@@ -259,6 +268,9 @@ export default function Home() {
               </Link>
             </div>
           </div>
+        </div>
+        <div className="relative z-0 h-72 overflow-hidden lg:hidden">
+          <LearnFlowDecor className={heroSlider ? "opacity-80" : ""} />
         </div>
       </section>
 
@@ -300,7 +312,7 @@ export default function Home() {
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {programmes.map((p) => (
-              <ProgramCard key={p.id} p={p} />
+              <ProgramCard key={p.id} p={p} onPreview={setPreview} />
             ))}
           </div>
         )}
@@ -454,6 +466,42 @@ export default function Home() {
           </div>
         </Card>
       </section>
+
+      {preview && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4"
+          onClick={() => setPreview(null)}
+          role="presentation"
+        >
+          <div className="w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center justify-between gap-3 text-white">
+              <p className="truncate font-bold">{preview.title} — intro</p>
+              <button
+                type="button"
+                aria-label="Close video"
+                className="rounded-lg bg-white/15 p-2 transition hover:bg-white/30"
+                onClick={() => setPreview(null)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {(() => {
+              const url = preview.intro_video_url!;
+              const isYt = url.includes("youtube") || url.includes("youtu.be");
+              return isYt ? (
+                <iframe
+                  className="aspect-video w-full rounded-2xl bg-black"
+                  src={url.replace("watch?v=", "embed/").replace("youtu.be/", "youtu.be/embed/")}
+                  title={`${preview.title} intro video`}
+                  allowFullScreen
+                />
+              ) : (
+                <video className="aspect-video w-full rounded-2xl bg-black" controls autoPlay src={publicFileUrl(url) || url} />
+              );
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

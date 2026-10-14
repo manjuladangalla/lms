@@ -99,7 +99,7 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-surface/85 backdrop-blur-lg">
       <div className="container-x flex h-16 items-center justify-between gap-4">
-        <Logo />
+        <Logo variant="short" />
         <nav className="hidden items-center gap-1 lg:flex">
           {publicLinks.map((l) => (
             <NavLink key={l.to} to={l.to} className={({ isActive }) => `nav-link ${isActive ? "bg-surface2 text-ink" : ""}`} end={l.to === "/"}>

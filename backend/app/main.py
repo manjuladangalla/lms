@@ -27,6 +27,14 @@ async def lifespan(app: FastAPI):
             print(f"[migrate] renamed {result.modified_count} user(s): role instructor -> lecturer")
     except Exception as exc:
         print(f"[warn] role migration skipped: {exc}")
+    # Auto-seed demo content (settings, users, English programmes, plans, banners…)
+    # Idempotent: replaces old demo programmes with the three English ones on first start only.
+    try:
+        from app.seed import seed_db
+
+        await seed_db(get_db())
+    except Exception as exc:
+        print(f"[warn] seed skipped: {exc}")
     await ensure_bucket()
     await start_events()
     yield

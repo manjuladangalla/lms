@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, BookOpen, FileText, GraduationCap, Paperclip, Plus, Save, Trash2, Upload, Users, Video } from "lucide-react";
-import { api, ApiError } from "../../lib/api";
+import { api, ApiError, publicFileUrl } from "../../lib/api";
 import { useRealtime } from "../../lib/realtime";
 import type { Assignment, AssignmentSubmission, Exam, InstituteSettings, Lesson, LiveSession, Material, Programme, Question, Subject } from "../../lib/types";
 import {
@@ -125,7 +125,23 @@ export default function AdminProgrammeEdit() {
 
   const [settingsForm, setSettingsForm] = useState<Partial<Programme>>({});
   const [introUploading, setIntroUploading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
   const [currencies, setCurrencies] = useState<string[]>(["USD"]);
+
+  const uploadCover = async (file: File) => {
+    setCoverUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("prefix", "programmes/cover");
+      const r = await api.upload<{ url: string }>("/upload", fd);
+      setSettingsForm((f) => ({ ...f, cover_image_url: r.url }));
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Upload failed");
+    } finally {
+      setCoverUploading(false);
+    }
+  };
 
   const uploadIntro = async (file: File) => {
     setIntroUploading(true);
@@ -805,6 +821,48 @@ export default function AdminProgrammeEdit() {
             <Field label="Duration">
               <Input value={settingsForm.duration || ""} onChange={(e) => setSettingsForm({ ...settingsForm, duration: e.target.value })} />
             </Field>
+            <div className="sm:col-span-2">
+              <Field
+                label="Cover / intro image"
+                hint="Shown on home page cards, catalogue and the programme header — the image the video play button sits on."
+              >
+                <div className="flex flex-wrap items-center gap-3">
+                  {settingsForm.cover_image_url ? (
+                    <img
+                      src={publicFileUrl(settingsForm.cover_image_url) || settingsForm.cover_image_url}
+                      alt="Cover"
+                      className="h-16 w-28 rounded-xl border border-border object-cover"
+                    />
+                  ) : (
+                    <div className="grid h-16 w-28 place-items-center rounded-xl border border-dashed border-border text-xs text-muted">
+                      No image
+                    </div>
+                  )}
+                  <label className={`btn-ghost cursor-pointer ${coverUploading ? "pointer-events-none opacity-60" : ""}`}>
+                    <Upload className="h-4 w-4" /> {coverUploading ? "Uploading…" : "Upload image"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadCover(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  {settingsForm.cover_image_url && (
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      onClick={() => setSettingsForm({ ...settingsForm, cover_image_url: null })}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </Field>
+            </div>
             <div className="sm:col-span-2">
               <Field
                 label="Intro video (public)"
