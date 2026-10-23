@@ -8,6 +8,7 @@ import ProgrammeDetail from "./pages/public/ProgrammeDetail";
 import Memberships from "./pages/public/Memberships";
 import Counselling from "./pages/public/Counselling";
 import Contact from "./pages/public/Contact";
+import Portal from "./pages/public/Portal";
 import Verify from "./pages/public/Verify";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -36,10 +37,15 @@ import AdminPlans from "./pages/admin/Plans";
 import AdminPromos from "./pages/admin/Promotions";
 import AdminBanners from "./pages/admin/Banners";
 import AdminCounselling from "./pages/admin/Counselling";
+import AdminFamilies from "./pages/admin/Families";
 import AdminPages from "./pages/admin/Pages";
 import AdminSettings from "./pages/admin/Settings";
 import AdminSystem from "./pages/admin/System";
 import AdminMessages from "./pages/admin/Messages";
+import ParentLayout from "./pages/parent/ParentLayout";
+import ParentDashboard from "./pages/parent/Dashboard";
+import ParentEnrol from "./pages/parent/Enrol";
+import ChildDetail from "./pages/parent/ChildDetail";
 
 function PublicShell({ children }: { children: React.ReactNode }) {
   return (
@@ -63,6 +69,7 @@ export default function App() {
       <Route path="/memberships" element={<PublicShell><Memberships /></PublicShell>} />
       <Route path="/counselling" element={<PublicShell><Counselling /></PublicShell>} />
       <Route path="/contact" element={<PublicShell><Contact /></PublicShell>} />
+      <Route path="/portal" element={<PublicShell><Portal /></PublicShell>} />
       <Route path="/verify" element={<PublicShell><Verify /></PublicShell>} />
       <Route path="/verify/:certNo" element={<PublicShell><Verify /></PublicShell>} />
       <Route path="/login" element={<PublicShell><Login /></PublicShell>} />
@@ -81,6 +88,19 @@ export default function App() {
       <Route path="/dashboard/counselling" element={<Protected><MyCounselling /></Protected>} />
 
       <Route
+        path="/parent/*"
+        element={
+          <Protected roles={["parent"]}>
+            <ParentLayout />
+          </Protected>
+        }
+      >
+        <Route index element={<ParentDashboard />} />
+        <Route path="enrol" element={<ParentEnrol />} />
+        <Route path="children/:studentId" element={<ChildDetail />} />
+      </Route>
+
+      <Route
         path="/admin/*"
         element={
           <Protected roles={["admin", "lecturer", "counselor"]}>
@@ -89,7 +109,8 @@ export default function App() {
                 <Route index element={<AdminDashboard />} />
                 <Route path="programmes" element={<AdminProgrammes />} />
                 <Route path="programmes/:id" element={<AdminProgrammeEdit />} />
-                <Route path="enrolments" element={<Protected roles={["admin"]}><AdminEnrolments /></Protected>} />
+                <Route path="enrolments" element={<Protected roles={["admin", "lecturer"]}><AdminEnrolments /></Protected>} />
+                <Route path="families" element={<Protected roles={["admin"]}><AdminFamilies /></Protected>} />
                 <Route path="payments" element={<Protected roles={["admin"]}><AdminPayments /></Protected>} />
                 <Route path="students" element={<Protected roles={["admin"]}><AdminStudents /></Protected>} />
                 <Route path="grading" element={<AdminGrading />} />

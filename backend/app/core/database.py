@@ -66,3 +66,11 @@ async def _ensure_indexes() -> None:
     await db.assignments.create_index([("programme_id", 1), ("subject_id", 1)])
     await db.assignment_submissions.create_index([("assignment_id", 1), ("user_id", 1)], unique=True)
     await db.assignment_submissions.create_index("programme_id")
+    # Parent <-> student links (max one row per pair)
+    await db.parent_students.create_index([("parent_id", 1), ("student_id", 1)], unique=True)
+    await db.parent_students.create_index("student_id")
+    await db.parent_students.create_index("status")
+    # Lecture notes from lecturers to students
+    await db.student_notes.create_index("student_id")
+    await db.student_notes.create_index("author_id")
+    await db.student_notes.create_index("programme_id")

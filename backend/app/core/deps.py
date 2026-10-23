@@ -52,6 +52,8 @@ require_admin = require_role("admin")
 require_staff = require_role("admin", "lecturer")
 require_student = require_role("admin", "lecturer", "student")
 require_counselor = require_role("admin", "counselor")
+require_parent = require_role("parent")
+require_parent_or_staff = require_role("parent", "admin", "lecturer")
 
 
 async def validate_refresh_token(token: str) -> dict:

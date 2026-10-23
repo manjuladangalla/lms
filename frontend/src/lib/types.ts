@@ -1,4 +1,4 @@
-export type Role = "admin" | "lecturer" | "counselor" | "student";
+export type Role = "admin" | "lecturer" | "counselor" | "student" | "parent";
 export type Theme = "light" | "dark" | "normal";
 
 export interface User {
@@ -143,13 +143,33 @@ export interface Enrolment {
   promo_code?: string | null;
   promo_discount_percent?: number;
   progress_percent?: number;
+  total_lessons?: number;
+  completed_lessons?: number;
   completed_at?: string | null;
   certificate_id?: string | null;
   created_at?: string;
+  requested_by?: string | null;
+  requested_by_role?: string | null;
+  decided_by?: string | null;
+  decided_at?: string | null;
+  decided_reason?: string | null;
+  note?: string | null;
   programme?: Programme | null;
   payment?: Payment | null;
   certificate?: Certificate | null;
-  student?: { id: string; name: string; email?: string } | null;
+  student?: { id: string; name: string; email?: string; active_enrolments?: number; pending_enrolments?: number } | null;
+  requested_by_user?: { id: string; name: string; email?: string } | null;
+}
+
+export interface ParentLink {
+  id: string;
+  parent_id: string;
+  student_id: string;
+  status: "pending" | "active" | "rejected" | "revoked";
+  reason?: string | null;
+  created_at?: string;
+  parent?: { id: string; name: string; email?: string } | null;
+  student?: { id: string; name: string; email?: string; active_enrolments?: number; pending_enrolments?: number } | null;
 }
 
 export interface MembershipPlan {
@@ -507,6 +527,26 @@ export interface Certificate {
   print_pdf_url?: string | null;
   print_values?: Record<string, string | null> | null;
   verify_url?: string | null;
+  programme?: { id: string; title: string } | null;
+}
+
+export interface StudentNote {
+  id: string;
+  student_id: string;
+  programme_id?: string | null;
+  author_id: string;
+  title: string;
+  body: string;
+  created_at?: string;
+  author?: { id: string; name: string; email?: string; role?: string } | null;
+  programme?: { id: string; title: string } | null;
+}
+
+export interface ChildOverview {
+  student: { id: string; name: string; email?: string; role?: string };
+  enrolments: Enrolment[];
+  certificates: Certificate[];
+  notes: StudentNote[];
 }
 
 export interface CertField {

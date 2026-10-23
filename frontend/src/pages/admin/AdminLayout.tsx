@@ -19,6 +19,7 @@ import {
   HeartHandshake,
   Tag,
   Image,
+  Baby,
 } from "lucide-react";
 import { useAuth } from "../../store/auth";
 import { Logo, ThemeSwitcher } from "../../components/layout";
@@ -26,7 +27,8 @@ import { Logo, ThemeSwitcher } from "../../components/layout";
 const links = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true, roles: ["admin", "lecturer", "counselor"] },
   { to: "/admin/programmes", label: "Programmes", icon: BookOpen, roles: ["admin", "lecturer"] },
-  { to: "/admin/enrolments", label: "Enrolments", icon: ClipboardList, roles: ["admin"] },
+  { to: "/admin/enrolments", label: "Enrolments", icon: ClipboardList, roles: ["admin", "lecturer"] },
+  { to: "/admin/families", label: "Families", icon: Baby, roles: ["admin"] },
   { to: "/admin/payments", label: "Payments", icon: BadgeDollarSign, roles: ["admin"] },
   { to: "/admin/students", label: "Users", icon: Users, roles: ["admin"] },
   { to: "/admin/grading", label: "Grading Queue", icon: CheckSquare, roles: ["admin", "lecturer"] },

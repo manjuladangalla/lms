@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 
 class MembershipPlanIn(BaseModel):
@@ -29,7 +29,47 @@ class EnrolIn(BaseModel):
 
 
 class EnrolStatusUpdate(BaseModel):
-    status: str = Field(pattern="^(active|revoked|cancelled|expired)$")
+    status: str = Field(pattern="^(active|revoked|cancelled|expired|rejected|pending_acceptance|pending_approval)$")
+    reason: str | None = None
+
+
+class StaffEnrolIn(BaseModel):
+    """Admin/lecturer enrolling a specific student — student must accept."""
+
+    student_id: str | None = None
+    student_email: EmailStr | None = None
+    programme_id: str
+    note: str | None = Field(default=None, max_length=500)
+
+
+class DecisionIn(BaseModel):
+    reason: str | None = Field(default=None, max_length=500)
+
+
+class NoteIn(BaseModel):
+    student_id: str
+    programme_id: str | None = None
+    title: str = Field(min_length=1, max_length=200)
+    body: str = Field(min_length=1, max_length=4000)
+
+
+class ParentChildIn(BaseModel):
+    email: EmailStr
+
+
+class ParentEnrolIn(BaseModel):
+    student_id: str
+    programme_id: str
+    note: str | None = Field(default=None, max_length=500)
+
+
+class ParentLinkAdminIn(BaseModel):
+    parent_email: EmailStr
+    student_email: EmailStr
+
+
+class ParentLinkStatusIn(BaseModel):
+    status: str = Field(pattern="^(active|rejected|revoked|pending)$")
     reason: str | None = None
 
 

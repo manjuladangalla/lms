@@ -5,9 +5,10 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 
 from app.core.database import get_db
-from app.core.deps import get_current_user, get_optional_user, require_admin
+from app.core.deps import get_current_user, get_optional_user, require_admin, require_staff
 from app.events import emit
 from app.models.commerce import (
+    DecisionIn,
     EnrolIn,
     EnrolStatusUpdate,
     MembershipPlanIn,
@@ -16,6 +17,7 @@ from app.models.commerce import (
     PaymentVerifyManual,
     PricingPreviewIn,
     PromoIn,
+    StaffEnrolIn,
     SubscribeIn,
 )
 from app.models.common import MessageOut, Page, serialize, serialize_many
@@ -225,7 +227,7 @@ async def enrol(body: EnrolIn, user: dict = Depends(get_current_user)):
     existing = await db.enrolments.find_one(
         {"user_id": user["_id"], "programme_id": programme["_id"], **scope_match}
     )
-    if existing and existing.get("status") in ("active", "pending_verification"):
+    if existing and existing.get("status") in ("active", "pending_verification", "pending_acceptance", "pending_approval"):
         return serialize(existing)
 
     is_free = bool(programme.get("is_free")) or (
@@ -332,7 +334,7 @@ async def my_enrolments(user: dict = Depends(get_current_user)):
 
 @router.get("/enrolments", response_model=Page[dict])
 async def admin_list_enrolments(
-    _: dict = Depends(require_admin),
+    _: dict = Depends(require_staff),
     status_: str | None = None,
     q: str | None = None,
     page: int = 1,
@@ -356,27 +358,203 @@ async def admin_list_enrolments(
         p = await db.programmes.find_one({"_id": e["programme_id"]})
         e["student"] = {"id": u["_id"], "name": u["name"], "email": u["email"]} if u else None
         e["programme"] = {"id": p["_id"], "title": p["title"], "type": p["type"], "price": p.get("price")} if p else None
+        if e.get("requested_by"):
+            r = await db.users.find_one({"_id": e["requested_by"]})
+            e["requested_by_user"] = {"id": r["_id"], "name": r["name"], "email": r["email"]} if r else None
     return Page[dict](items=items, total=total, page=page, size=size)
 
 
-@router.patch("/enrolments/{enrolment_id}", response_model=dict)
-async def update_enrolment(enrolment_id: str, body: EnrolStatusUpdate, admin: dict = Depends(require_admin)):
+@router.post("/enrolments/staff", response_model=dict)
+async def staff_enrol(body: StaffEnrolIn, staff: dict = Depends(require_staff)):
+    """Admin/lecturer enrolls a student — enrolment waits for student/parent acceptance."""
+    db = get_db()
+    student = None
+    if body.student_id:
+        student = await db.users.find_one({"_id": body.student_id})
+    elif body.student_email:
+        student = await db.users.find_one({"email": body.student_email.lower()})
+    if not student or student.get("role") != "student":
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Student account not found")
+    programme = await db.programmes.find_one({"_id": body.programme_id})
+    if not programme:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Programme not found")
+
+    existing = await db.enrolments.find_one(
+        {"user_id": student["_id"], "programme_id": programme["_id"], "scope_key": {"$in": [None, "programme"]}}
+    )
+    if existing and existing.get("status") in ("active", "pending_acceptance", "pending_approval", "pending_verification"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Student is already enrolled or has a pending request")
+
+    now = _now()
+    fields = {
+        "status": "pending_acceptance",
+        "source": "admin",
+        "payment_id": None,
+        "access_expires_at": None,
+        "billing_interval": None,
+        "scope_key": "programme",
+        "scope_type": "programme",
+        "scope_id": None,
+        "pricing_mode": programme.get("pricing_mode") or "once",
+        "base_amount": float(programme.get("price") or 0),
+        "amount": 0.0,
+        "currency": programme.get("currency"),
+        "member_discount_percent": 0,
+        "promo_code": None,
+        "promo_discount_percent": 0,
+        "requested_by": staff["_id"],
+        "requested_by_role": staff.get("role"),
+        "note": body.note,
+        "decided_by": None,
+        "decided_at": None,
+        "decided_reason": None,
+        "updated_at": now,
+    }
+    if existing:
+        await db.enrolments.update_one({"_id": existing["_id"]}, {"$set": fields})
+        enrolment = {**existing, **fields}
+    else:
+        enrolment = {
+            "_id": uuid4().hex,
+            "user_id": student["_id"],
+            "programme_id": programme["_id"],
+            "progress_percent": 0,
+            "total_lessons": 0,
+            "completed_lessons": 0,
+            "completed_at": None,
+            "certificate_id": None,
+            "created_at": now,
+            **fields,
+        }
+        await db.enrolments.insert_one(enrolment)
+    await emit("admin", "enrolment.created", {"enrolment_id": enrolment["_id"], "programme_id": programme["_id"], "user_id": student["_id"], "status": enrolment["status"]})
+    await emit("user:{user_id}".format(user_id=student["_id"]), "enrolment.created", {"enrolment_id": enrolment["_id"], "programme_id": programme["_id"], "status": enrolment["status"]})
+    return serialize(enrolment)
+
+
+async def _guard_enrolment_decision(db, enrolment_id: str, user: dict, *, for_parent: bool = False) -> dict:
+    doc = await db.enrolments.find_one({"_id": enrolment_id})
+    if not doc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Enrolment not found")
+    if doc["user_id"] == user["_id"] and user.get("role") in ("student", "admin", "lecturer"):
+        return doc
+    if user.get("role") == "parent":
+        link = await db.parent_students.find_one(
+            {"parent_id": user["_id"], "student_id": doc["user_id"], "status": "active"}
+        )
+        if link:
+            return doc
+    raise HTTPException(status.HTTP_403_FORBIDDEN, "You cannot decide on this enrolment")
+
+
+@router.post("/enrolments/{enrolment_id}/accept", response_model=dict)
+async def accept_enrolment(enrolment_id: str, body: DecisionIn, user: dict = Depends(get_current_user)):
+    """Student or linked parent accepts a staff-created enrolment."""
+    db = get_db()
+    doc = await _guard_enrolment_decision(db, enrolment_id, user)
+    if doc.get("status") != "pending_acceptance":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Enrolment is not awaiting acceptance")
+    now = _now()
+    await db.enrolments.update_one(
+        {"_id": enrolment_id},
+        {"$set": {"status": "active", "decided_by": user["_id"], "decided_at": now, "decided_reason": body.reason, "updated_at": now}},
+    )
+    doc["status"] = "active"
+    await emit("admin", "enrolment.updated", {"enrolment_id": enrolment_id, "status": "active"})
+    await emit("user:{user_id}".format(user_id=doc["user_id"]), "enrolment.updated", {"enrolment_id": enrolment_id, "status": "active"})
+    return serialize(doc)
+
+
+@router.post("/enrolments/{enrolment_id}/decline", response_model=dict)
+async def decline_enrolment(enrolment_id: str, body: DecisionIn, user: dict = Depends(get_current_user)):
+    """Student or linked parent declines a staff-created enrolment."""
+    db = get_db()
+    doc = await _guard_enrolment_decision(db, enrolment_id, user)
+    if doc.get("status") != "pending_acceptance":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Enrolment is not awaiting acceptance")
+    now = _now()
+    await db.enrolments.update_one(
+        {"_id": enrolment_id},
+        {"$set": {"status": "cancelled", "decided_by": user["_id"], "decided_at": now, "decided_reason": body.reason, "updated_at": now}},
+    )
+    doc["status"] = "cancelled"
+    await emit("admin", "enrolment.updated", {"enrolment_id": enrolment_id, "status": "cancelled"})
+    await emit("user:{user_id}".format(user_id=doc["user_id"]), "enrolment.updated", {"enrolment_id": enrolment_id, "status": "cancelled"})
+    return serialize(doc)
+
+
+@router.post("/enrolments/{enrolment_id}/approve", response_model=dict)
+async def approve_enrolment(enrolment_id: str, body: DecisionIn, staff: dict = Depends(require_staff)):
+    """Admin/lecturer approves a parent-requested enrolment."""
     db = get_db()
     doc = await db.enrolments.find_one({"_id": enrolment_id})
     if not doc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Enrolment not found")
+    if doc.get("status") != "pending_approval":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Enrolment is not awaiting approval")
+    now = _now()
     await db.enrolments.update_one(
         {"_id": enrolment_id},
-        {"$set": {"status": body.status, "updated_at": _now()}},
+        {"$set": {"status": "active", "decided_by": staff["_id"], "decided_at": now, "decided_reason": body.reason, "updated_at": now}},
+    )
+    doc["status"] = "active"
+    if doc.get("payment_id"):
+        pay = await db.payments.find_one({"_id": doc["payment_id"]})
+        if pay and pay["status"] in ("awaiting_verification", "pending"):
+            await db.payments.update_one(
+                {"_id": pay["_id"]},
+                {"$set": {"status": "succeeded", "verified_by": staff["_id"], "verified_at": now}},
+            )
+    await emit("admin", "enrolment.updated", {"enrolment_id": enrolment_id, "status": "active"})
+    await emit("user:{user_id}".format(user_id=doc["user_id"]), "enrolment.updated", {"enrolment_id": enrolment_id, "status": "active"})
+    return serialize(doc)
+
+
+@router.post("/enrolments/{enrolment_id}/reject", response_model=dict)
+async def reject_enrolment(enrolment_id: str, body: DecisionIn, staff: dict = Depends(require_staff)):
+    """Admin/lecturer rejects a parent-requested enrolment."""
+    db = get_db()
+    doc = await db.enrolments.find_one({"_id": enrolment_id})
+    if not doc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Enrolment not found")
+    if doc.get("status") != "pending_approval":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Enrolment is not awaiting approval")
+    now = _now()
+    await db.enrolments.update_one(
+        {"_id": enrolment_id},
+        {"$set": {"status": "rejected", "decided_by": staff["_id"], "decided_at": now, "decided_reason": body.reason, "updated_at": now}},
+    )
+    doc["status"] = "rejected"
+    await emit("admin", "enrolment.updated", {"enrolment_id": enrolment_id, "status": "rejected"})
+    await emit("user:{user_id}".format(user_id=doc["user_id"]), "enrolment.updated", {"enrolment_id": enrolment_id, "status": "rejected"})
+    return serialize(doc)
+
+
+@router.patch("/enrolments/{enrolment_id}", response_model=dict)
+async def update_enrolment(enrolment_id: str, body: EnrolStatusUpdate, admin: dict = Depends(require_staff)):
+    db = get_db()
+    doc = await db.enrolments.find_one({"_id": enrolment_id})
+    if not doc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Enrolment not found")
+    now = _now()
+    set_fields: dict = {"status": body.status, "updated_at": now}
+    if body.status in ("active", "revoked", "cancelled", "rejected"):
+        set_fields["decided_by"] = admin["_id"]
+        set_fields["decided_at"] = now
+        set_fields["decided_reason"] = body.reason
+    await db.enrolments.update_one(
+        {"_id": enrolment_id},
+        {"$set": set_fields},
     )
     if body.status == "active" and doc.get("payment_id"):
         pay = await db.payments.find_one({"_id": doc["payment_id"]})
         if pay and pay["status"] in ("awaiting_verification", "pending"):
             await db.payments.update_one(
                 {"_id": pay["_id"]},
-                {"$set": {"status": "succeeded", "verified_by": admin["_id"], "verified_at": _now()}},
+                {"$set": {"status": "succeeded", "verified_by": admin["_id"], "verified_at": now}},
             )
     doc["status"] = body.status
+    await emit("user:{user_id}".format(user_id=doc["user_id"]), "enrolment.updated", {"enrolment_id": enrolment_id, "status": body.status})
     return serialize(doc)
 
 

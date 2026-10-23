@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Award, BookOpen, BadgeCheck, TrendingUp, Wallet, GraduationCap, ArrowRight, Crown } from "lucide-react";
+import { Award, BookOpen, BadgeCheck, TrendingUp, Wallet, GraduationCap, ArrowRight, Crown, CheckCircle2, FileText, XCircle } from "lucide-react";
 import { api } from "../../lib/api";
-import type { StudentDashboard as SD } from "../../lib/types";
+import type { Enrolment, StudentDashboard as SD, StudentNote } from "../../lib/types";
 import { useAuth } from "../../store/auth";
 import { Badge, Button, Card, EmptyState, LoadingBlock, ProgressBar, StatCard } from "../../components/ui";
 import { Logo, ThemeSwitcher } from "../../components/layout";
@@ -13,24 +13,42 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState<SD | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notes, setNotes] = useState<StudentNote[]>([]);
 
   useEffect(() => {
     api
       .get<SD>("/dashboard/student")
       .then(setData)
       .finally(() => setLoading(false));
+    api
+      .get<{ items: StudentNote[] }>("/notes/mine")
+      .then((r) => setNotes((r.items || []).slice(0, 5)))
+      .catch(() => {});
   }, []);
 
   useRealtime((event) => {
-    if (["enrolment.updated", "payment.updated", "membership.updated"].includes(event)) {
+    if (["enrolment.updated", "payment.updated", "membership.updated", "note.created"].includes(event)) {
       api.get<SD>("/dashboard/student").then(setData).catch(() => {});
+      if (event === "note.created") {
+        api.get<{ items: StudentNote[] }>("/notes/mine").then((r) => setNotes((r.items || []).slice(0, 5))).catch(() => {});
+      }
     }
   });
+
+  const decide = async (id: string, action: "accept" | "decline") => {
+    try {
+      await api.post(`/enrolments/${id}/${action}`, { reason: null });
+      api.get<SD>("/dashboard/student").then(setData).catch(() => {});
+    } catch {
+      /* keep quiet; list refresh will show state */
+    }
+  };
 
   if (loading) return <LoadingBlock />;
   if (!data) return <EmptyState title="Dashboard unavailable" />;
 
   const s = data.stats;
+  const awaiting = (data.enrolments || []).filter((e: Enrolment) => e.status === "pending_acceptance");
 
   return (
     <div className="min-h-screen bg-bg">
@@ -90,6 +108,35 @@ export default function Dashboard() {
               You have <b>{s.pending_payments}</b> payment(s) awaiting confirmation.
             </p>
             <Link to="/dashboard/payments" className="btn-ghost">Review</Link>
+          </Card>
+        )}
+
+        {awaiting.length > 0 && (
+          <Card className="mt-6 border-warning/40 bg-warning/5 p-5">
+            <h2 className="mb-3 flex items-center gap-2 font-bold">
+              <CheckCircle2 className="h-5 w-5 text-warning" /> Enrolments awaiting your acceptance
+            </h2>
+            <div className="space-y-3">
+              {awaiting.map((e) => (
+                <div key={e.id} className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-semibold">{e.programme?.title}</p>
+                    <p className="text-xs text-muted">
+                      Added by {e.requested_by_user?.name || (e.requested_by_role === "parent" ? "your parent" : "the institute")}
+                      {e.note ? ` · "${e.note}"` : ""}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={() => decide(e.id, "accept")}>
+                      <CheckCircle2 className="h-4 w-4" /> Accept
+                    </Button>
+                    <Button variant="danger" onClick={() => decide(e.id, "decline")}>
+                      <XCircle className="h-4 w-4" /> Decline
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </Card>
         )}
 
@@ -183,6 +230,26 @@ export default function Dashboard() {
                   </Link>
                 </div>
               )}
+            </Card>
+
+            <Card className="p-5">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-accent" />
+                <h3 className="font-bold">Lecture Notes</h3>
+              </div>
+              <div className="mt-3 space-y-3">
+                {notes.length === 0 && <p className="text-sm text-muted">No notes from lecturers yet.</p>}
+                {notes.map((n) => (
+                  <div key={n.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
+                    <p className="text-sm font-semibold">{n.title}</p>
+                    <p className="mt-0.5 line-clamp-2 text-xs text-muted">{n.body}</p>
+                    <p className="mt-1 text-[11px] text-muted">
+                      {n.author?.name}
+                      {n.created_at ? ` · ${new Date(n.created_at).toLocaleDateString()}` : ""}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </Card>
 
             <Card className="p-5">

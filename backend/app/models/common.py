@@ -32,9 +32,19 @@ class ContentStatus(str, Enum):
 
 class EnrolmentStatus(str, Enum):
     pending_verification = "pending_verification"
+    pending_acceptance = "pending_acceptance"  # staff-created: student/parent must accept
+    pending_approval = "pending_approval"  # parent-created: staff must approve
     active = "active"
     expired = "expired"
     cancelled = "cancelled"
+    rejected = "rejected"
+    revoked = "revoked"
+
+
+class ParentLinkStatus(str, Enum):
+    pending = "pending"
+    active = "active"
+    rejected = "rejected"
     revoked = "revoked"
 
 

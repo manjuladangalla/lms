@@ -289,6 +289,69 @@ async def seed_db(db) -> None:
         })
         print(f"Created counsellor: {counsellor_email} / Counsellor@123")
 
+    # Demo student + parent pair (parent portal / enrolment approval demo)
+    demo_student_email = "student@example.com"
+    demo_student = await db.users.find_one({"email": demo_student_email})
+    if not demo_student:
+        doc = {
+            "_id": uuid4().hex,
+            "name": "Demo Student",
+            "email": demo_student_email,
+            "password_hash": hash_password("Student@123"),
+            "phone": None,
+            "role": "student",
+            "status": "active",
+            "theme": "normal",
+            "avatar_url": None,
+            "google_id": None,
+            "email_verified": True,
+            "created_at": now,
+            "updated_at": now,
+        }
+        await db.users.insert_one(doc)
+        demo_student = doc
+        print(f"Created student: {demo_student_email} / Student@123")
+
+    demo_parent_email = "parent@example.com"
+    demo_parent = await db.users.find_one({"email": demo_parent_email})
+    if not demo_parent:
+        doc = {
+            "_id": uuid4().hex,
+            "name": "Demo Parent",
+            "email": demo_parent_email,
+            "password_hash": hash_password("Parent@123"),
+            "phone": None,
+            "role": "parent",
+            "status": "active",
+            "theme": "normal",
+            "avatar_url": None,
+            "google_id": None,
+            "email_verified": True,
+            "created_at": now,
+            "updated_at": now,
+        }
+        await db.users.insert_one(doc)
+        demo_parent = doc
+        print(f"Created parent: {demo_parent_email} / Parent@123")
+
+    if demo_parent and demo_student and not await db.parent_students.find_one(
+        {"parent_id": demo_parent["_id"], "student_id": demo_student["_id"]}
+    ):
+        await db.parent_students.insert_one({
+            "_id": uuid4().hex,
+            "parent_id": demo_parent["_id"],
+            "student_id": demo_student["_id"],
+            "status": "active",
+            "requested_by": None,
+            "requested_by_role": "seed",
+            "reason": None,
+            "decided_by": None,
+            "decided_at": None,
+            "created_at": now,
+            "updated_at": now,
+        })
+        print("Linked demo parent -> demo student")
+
     # Weekly availability - the counsellor's standing sessions (doctor-style booking)
     legacy = await db.counselling_schedules.find({"weekdays": {"$exists": False}}).to_list(length=1000)
     if legacy:

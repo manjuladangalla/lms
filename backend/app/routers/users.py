@@ -51,8 +51,8 @@ async def create_user(body: dict, _: dict = Depends(require_admin)):
     if await db.users.find_one({"email": email}):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Email already exists")
     role = body.get("role") or "student"
-    if role not in ("admin", "lecturer", "counselor", "student"):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "role must be admin, lecturer, counselor or student")
+    if role not in ("admin", "lecturer", "counselor", "student", "parent"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "role must be admin, lecturer, counselor, student or parent")
     status_val = body.get("status") or "active"
     if status_val not in ("active", "suspended"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "status must be active or suspended")

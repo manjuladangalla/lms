@@ -83,7 +83,7 @@ export default function AdminStudents() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold">Users</h1>
-          <p className="text-sm text-muted">Students, lecturers, counsellors and administrators.</p>
+          <p className="text-sm text-muted">Students, parents, lecturers, counsellors and administrators.</p>
         </div>
         <Button onClick={() => setOpen(true)}>Add User</Button>
       </div>
@@ -93,6 +93,7 @@ export default function AdminStudents() {
         <Select value={role} onChange={(e) => { setRole(e.target.value); setPage(1); }} className="w-44">
           <option value="">All roles</option>
           <option value="student">Student</option>
+          <option value="parent">Parent</option>
           <option value="lecturer">Lecturer</option>
           <option value="counselor">Counsellor</option>
           <option value="admin">Admin</option>
@@ -166,6 +167,7 @@ export default function AdminStudents() {
           <Field label="Role">
             <Select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
               <option value="student">Student</option>
+              <option value="parent">Parent</option>
               <option value="lecturer">Lecturer</option>
               <option value="counselor">Counsellor</option>
               <option value="admin">Admin</option>

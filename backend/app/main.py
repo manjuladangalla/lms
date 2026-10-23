@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.database import close_db, connect_db, get_db
 from app.core.redis import close_redis, connect_redis
 from app.events import router as events_router, start_events, stop_events
-from app.routers import assignments, auth, commerce, content, counselling, dashboard, learning, live, site, system, upload, users
+from app.routers import assignments, auth, commerce, content, counselling, dashboard, learning, live, notes, parents, site, system, upload, users
 from app.services.storage import ensure_bucket
 
 
@@ -76,6 +76,8 @@ app.include_router(learning.router, prefix=api)
 app.include_router(live.router, prefix=api)
 app.include_router(assignments.router, prefix=api)
 app.include_router(counselling.router, prefix=api)
+app.include_router(parents.router, prefix=api)
+app.include_router(notes.router, prefix=api)
 app.include_router(dashboard.router, prefix=api)
 app.include_router(events_router, prefix=api)
 

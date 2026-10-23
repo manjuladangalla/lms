@@ -1,34 +1,75 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import { GraduationCap, LogOut, Menu, Monitor, Moon, Sun, X, LayoutDashboard, Shield } from "lucide-react";
-import { useState } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { GraduationCap, LogOut, Menu, Monitor, Moon, Sun, X, LayoutDashboard, Shield, Users, ChevronDown, Check } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../store/auth";
 import { useTheme } from "../store/theme";
 import { publicFileUrl } from "../lib/api";
+import { portalFor } from "../lib/portal";
 import type { Theme } from "../lib/types";
 
 const themeIcon: Record<Theme, typeof Sun> = { normal: Monitor, light: Sun, dark: Moon };
 
 export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
   const { theme, setTheme, themes } = useTheme();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const CurrentIcon = themeIcon[theme] || Monitor;
+  const sizeCls = compact ? "h-9 w-9" : "h-9 w-9";
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   return (
-    <div className={`flex items-center gap-1 rounded-xl border border-border bg-surface p-1 ${compact ? "" : ""}`} title="Switch template">
-      {themes.map((t) => {
-        const Icon = themeIcon[t.id];
-        const active = theme === t.id;
-        return (
-          <button
-            key={t.id}
-            onClick={() => setTheme(t.id)}
-            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
-              active ? "bg-gradient-to-r from-primary to-primary2 text-white shadow-soft" : "text-muted hover:bg-surface2 hover:text-ink"
-            }`}
-            aria-label={`${t.label} template`}
-          >
-            <Icon className="h-3.5 w-3.5" />
-            {!compact && <span className="hidden sm:inline">{t.label}</span>}
-          </button>
-        );
-      })}
+    <div className="relative" ref={ref} title="Switch theme">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Switch theme"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={`grid ${sizeCls} place-items-center rounded-xl border border-border bg-surface text-muted transition hover:bg-surface2 hover:text-ink ${
+          open ? "text-ink" : ""
+        }`}
+      >
+        <CurrentIcon className="h-4 w-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-11 z-50 min-w-40 overflow-hidden rounded-xl border border-border bg-surface shadow-soft animate-fadeUp" role="menu">
+          {themes.map((t) => {
+            const Icon = themeIcon[t.id];
+            const active = theme === t.id;
+            return (
+              <button
+                key={t.id}
+                role="menuitem"
+                onClick={() => {
+                  setTheme(t.id);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-sm font-semibold transition ${
+                  active ? "bg-primary/10 text-primary" : "text-muted hover:bg-surface2 hover:text-ink"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                <span className="flex-1 text-left">{t.label}</span>
+                {active && <Check className="h-4 w-4" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -76,32 +117,118 @@ export function Logo({ size = "md", variant = "full" }: { size?: "sm" | "md" | "
   );
 }
 
-const publicLinks = [
-  { to: "/", label: "Home" },
-  { to: "/about", label: "About" },
+const programmeLinks = [
   { to: "/classes", label: "Classes" },
   { to: "/courses", label: "Courses" },
   { to: "/diploma", label: "Diploma" },
+];
+
+const publicLinks = [
+  { to: "/", label: "Home" },
+  { to: "/about", label: "About" },
   { to: "/memberships", label: "Memberships" },
   { to: "/counselling", label: "Counselling" },
   { to: "/verify", label: "Verify" },
   { to: "/contact", label: "Contact" },
 ];
 
+function isProgrammePath(pathname: string): boolean {
+  return programmeLinks.some((p) => pathname === p.to);
+}
+
+function ProgrammeMenu({ onNavigate, mobile = false }: { onNavigate?: () => void; mobile?: boolean }) {
+  const { pathname } = useLocation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const active = isProgrammePath(pathname);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={`flex items-center gap-1 ${mobile ? "nav-link w-full" : "nav-link"} ${
+          active && !open ? "bg-surface2 text-ink" : ""
+        }`}
+      >
+        Our Programmes
+        <ChevronDown className={`h-3.5 w-3.5 transition ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className={
+            mobile
+              ? "mt-1 flex flex-col gap-1 rounded-xl border border-border bg-surface p-1 shadow-soft"
+              : "absolute left-0 top-full z-50 mt-1 min-w-44 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-soft animate-fadeUp"
+          }
+        >
+          {programmeLinks.map((l) => (
+            <NavLink
+              key={l.to}
+              to={l.to}
+              end
+              onClick={() => {
+                setOpen(false);
+                onNavigate?.();
+              }}
+              className={({ isActive }) =>
+                mobile
+                  ? `nav-link ${isActive ? "bg-surface2 text-ink" : ""}`
+                  : `block px-4 py-2.5 text-sm font-semibold transition ${
+                      isActive ? "bg-surface2 text-ink" : "text-muted hover:bg-surface2 hover:text-ink"
+                    }`
+              }
+            >
+              {l.label}
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const dashboardHref =
-    user?.role === "admin" || user?.role === "lecturer" || user?.role === "counselor" ? "/admin" : "/dashboard";
+  const dashboardHref = portalFor(user?.role);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-surface/85 backdrop-blur-lg">
       <div className="container-x flex h-16 items-center justify-between gap-4">
         <Logo variant="short" />
         <nav className="hidden items-center gap-1 lg:flex">
-          {publicLinks.map((l) => (
+          {publicLinks.slice(0, 2).map((l) => (
+            <NavLink key={l.to} to={l.to} className={({ isActive }) => `nav-link ${isActive ? "bg-surface2 text-ink" : ""}`} end={l.to === "/"}>
+              {l.label}
+            </NavLink>
+          ))}
+          <ProgrammeMenu />
+          {publicLinks.slice(2).map((l) => (
             <NavLink key={l.to} to={l.to} className={({ isActive }) => `nav-link ${isActive ? "bg-surface2 text-ink" : ""}`} end={l.to === "/"}>
               {l.label}
             </NavLink>
@@ -127,6 +254,10 @@ export function Navbar() {
             </div>
           ) : (
             <div className="hidden items-center gap-2 sm:flex">
+              <Link to="/portal" className="btn-ghost h-10 whitespace-nowrap">
+                <Users className="h-4 w-4" />
+                Student Portal
+              </Link>
               <Link to="/login" className="btn-ghost h-10 whitespace-nowrap">
                 Login
               </Link>
@@ -143,7 +274,13 @@ export function Navbar() {
       {open && (
         <div className="border-t border-border bg-surface px-4 py-3 lg:hidden">
           <nav className="flex flex-col gap-1">
-            {publicLinks.map((l) => (
+            {publicLinks.slice(0, 2).map((l) => (
+              <NavLink key={l.to} to={l.to} className="nav-link" end={l.to === "/"} onClick={() => setOpen(false)}>
+                {l.label}
+              </NavLink>
+            ))}
+            <ProgrammeMenu mobile onNavigate={() => setOpen(false)} />
+            {publicLinks.slice(2).map((l) => (
               <NavLink key={l.to} to={l.to} className="nav-link" end={l.to === "/"} onClick={() => setOpen(false)}>
                 {l.label}
               </NavLink>
@@ -154,13 +291,18 @@ export function Navbar() {
                 Dashboard
               </Link>
             ) : (
-              <div className="flex gap-2">
-                <Link to="/login" className="btn-ghost h-10 flex-1 whitespace-nowrap" onClick={() => setOpen(false)}>
-                  Login
+              <div className="flex flex-col gap-2">
+                <Link to="/portal" className="btn-ghost h-10 whitespace-nowrap" onClick={() => setOpen(false)}>
+                  Student Portal
                 </Link>
-                <Link to="/register" className="btn-primary h-10 flex-1 whitespace-nowrap" onClick={() => setOpen(false)}>
-                  Get Started
-                </Link>
+                <div className="flex gap-2">
+                  <Link to="/login" className="btn-ghost h-10 flex-1 whitespace-nowrap" onClick={() => setOpen(false)}>
+                    Login
+                  </Link>
+                  <Link to="/register" className="btn-primary h-10 flex-1 whitespace-nowrap" onClick={() => setOpen(false)}>
+                    Get Started
+                  </Link>
+                </div>
               </div>
             )}
           </nav>
