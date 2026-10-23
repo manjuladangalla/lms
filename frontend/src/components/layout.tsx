@@ -98,11 +98,11 @@ export function Logo({ size = "md", variant = "full" }: { size?: "sm" | "md" | "
         <img
           src={logo}
           alt={siteName}
-          className={`${dim} shrink-0 rounded-full bg-white object-cover p-1 shadow-soft ring-2 ring-primary/25 transition group-hover:ring-primary/60`}
+          className={`${dim} shrink-0 rounded-full bg-white object-cover p-1 shadow-soft transition`}
         />
       ) : (
         <span
-          className={`${dim} grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary via-primary2 to-accent text-white shadow-soft ring-2 ring-primary/25 transition group-hover:ring-primary/60`}
+          className={`${dim} grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary via-primary2 to-accent text-white shadow-soft transition`}
         >
           <GraduationCap className={icon} />
         </span>
