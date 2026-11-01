@@ -82,17 +82,24 @@ function splitName(name: string): [string, string] {
 }
 
 /** Font size shrinks as the label gets longer so it never wraps/overflows. */
-function fitFontSize(text: string, size: "sm" | "md" | "lg" | "footer"): string {
+function fitFontSize(text: string, size: "sm" | "md" | "lg"): string {
   const len = (text || "").trim().length;
   const ladder: Record<string, Record<string, string>> = {
     lg: { s: "text-xl", m: "text-lg", l: "text-base", xl: "text-[0.95rem]" },
     md: { s: "text-[0.95rem]", m: "text-[0.88rem]", l: "text-[0.8rem]", xl: "text-[0.72rem]" },
     sm: { s: "text-[0.82rem]", m: "text-[0.76rem]", l: "text-[0.7rem]", xl: "text-[0.64rem]" },
-    // Footer site name — deliberately large, still auto-shrinks for long names
-    footer: { s: "text-3xl sm:text-4xl", m: "text-2xl sm:text-3xl", l: "text-xl sm:text-2xl", xl: "text-lg sm:text-xl" },
   };
   const key = len <= 8 ? "s" : len <= 14 ? "m" : len <= 22 ? "l" : "xl";
   return ladder[size][key];
+}
+
+/** Footer site name — big, and long names wrap over multiple lines instead of shrinking. */
+function footerFontSize(text: string): string {
+  const len = (text || "").trim().length;
+  if (len <= 12) return "text-4xl sm:text-5xl lg:text-6xl";
+  if (len <= 20) return "text-3xl sm:text-4xl lg:text-5xl";
+  if (len <= 30) return "text-2xl sm:text-3xl lg:text-4xl";
+  return "text-xl sm:text-2xl lg:text-3xl";
 }
 
 export function Logo({ size = "md", variant = "full", mono = false }: { size?: "sm" | "md" | "lg"; variant?: "full" | "short"; mono?: boolean }) {
@@ -104,7 +111,7 @@ export function Logo({ size = "md", variant = "full", mono = false }: { size?: "
   // mono: single line, single colour (footer) — otherwise the name splits into two tones
   const [line1, line2] = mono ? [fullName, ""] : variant === "short" && short ? [short, ""] : splitName(fullName);
   const dim = size === "lg" ? "h-14 w-14" : size === "sm" ? "h-9 w-9" : "h-11 w-11";
-  const l1 = fitFontSize(line1, mono ? "footer" : size);
+  const l1 = mono ? footerFontSize(line1) : fitFontSize(line1, size);
   const l2 = size === "lg" ? "text-[0.72rem]" : "text-[0.62rem]";
   const icon = size === "sm" ? "h-4 w-4" : "h-5 w-5";
   return (
@@ -122,7 +129,11 @@ export function Logo({ size = "md", variant = "full", mono = false }: { size?: "
           <GraduationCap className={icon} />
         </span>
       )}
-      <span className={`flex min-w-0 flex-col text-left leading-[1.12] ${mono ? "max-w-full" : "max-w-[14rem]"}`}>
+      <span
+        className={`flex min-w-0 flex-col text-left leading-[1.12] ${
+          mono ? "max-w-full whitespace-normal break-words leading-[1.05]" : "max-w-[14rem]"
+        }`}
+      >
         <span className={`${l1} font-extrabold tracking-tight text-ink`}>{line1}</span>
         {line2 && (
           <span className={`${l2} font-bold uppercase tracking-[0.16em] text-muted`}>{line2}</span>
