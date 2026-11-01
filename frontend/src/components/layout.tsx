@@ -81,25 +81,25 @@ function splitName(name: string): [string, string] {
   return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
 }
 
-/** Font size shrinks as the label gets longer so it never wraps/overflows. */
+/** Font size shrinks as the label gets longer, but always stays above the menu font (text-sm). */
 function fitFontSize(text: string, size: "sm" | "md" | "lg"): string {
   const len = (text || "").trim().length;
   const ladder: Record<string, Record<string, string>> = {
-    lg: { s: "text-xl", m: "text-lg", l: "text-base", xl: "text-[0.95rem]" },
-    md: { s: "text-[0.95rem]", m: "text-[0.88rem]", l: "text-[0.8rem]", xl: "text-[0.72rem]" },
-    sm: { s: "text-[0.82rem]", m: "text-[0.76rem]", l: "text-[0.7rem]", xl: "text-[0.64rem]" },
+    lg: { s: "text-3xl", m: "text-2xl", l: "text-xl", xl: "text-lg" },
+    md: { s: "text-2xl", m: "text-xl", l: "text-lg", xl: "text-base" },
+    sm: { s: "text-[1.1rem]", m: "text-[1rem]", l: "text-[0.9rem]", xl: "text-[0.8rem]" },
   };
   const key = len <= 8 ? "s" : len <= 14 ? "m" : len <= 22 ? "l" : "xl";
   return ladder[size][key];
 }
 
-/** Footer site name — big, and long names wrap over multiple lines instead of shrinking. */
+/** Footer site name — always well above the menu font, and long names wrap. */
 function footerFontSize(text: string): string {
   const len = (text || "").trim().length;
   if (len <= 12) return "text-4xl sm:text-5xl lg:text-6xl";
   if (len <= 20) return "text-3xl sm:text-4xl lg:text-5xl";
   if (len <= 30) return "text-2xl sm:text-3xl lg:text-4xl";
-  return "text-xl sm:text-2xl lg:text-3xl";
+  return "text-lg sm:text-xl lg:text-2xl";
 }
 
 export function Logo({ size = "md", variant = "full", mono = false }: { size?: "sm" | "md" | "lg"; variant?: "full" | "short"; mono?: boolean }) {
@@ -131,7 +131,7 @@ export function Logo({ size = "md", variant = "full", mono = false }: { size?: "
       )}
       <span
         className={`flex min-w-0 flex-col text-left leading-[1.12] ${
-          mono ? "max-w-full whitespace-normal break-words leading-[1.05]" : "max-w-[14rem]"
+          mono ? "max-w-full whitespace-normal break-words leading-[1.05]" : "max-w-[16rem] whitespace-normal break-words sm:max-w-[22rem]"
         }`}
       >
         <span className={`${l1} font-extrabold tracking-tight text-ink`}>{line1}</span>
@@ -245,7 +245,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-surface/85 backdrop-blur-lg">
-      <div className="container-x flex h-16 items-center justify-between gap-4">
+      <div className="container-x flex min-h-16 items-center justify-between gap-4 py-2">
         <Logo variant="short" />
         <nav className="hidden items-center gap-1 lg:flex">
           {publicLinks.slice(0, 2).map((l) => (
