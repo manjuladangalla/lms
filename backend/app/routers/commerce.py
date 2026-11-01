@@ -203,14 +203,18 @@ async def enrol(body: EnrolIn, user: dict = Depends(get_current_user)):
     from app.routers.site import get_settings_doc
 
     site_settings = await get_settings_doc(db)
-    if site_settings.get("enrolment_mode") == "contact" and user.get("role") not in ("admin", "lecturer"):
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN,
-            "Online enrolment is currently closed — please contact the institute to enrol",
-        )
     programme = await db.programmes.find_one({"_id": body.programme_id})
     if not programme:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Programme not found")
+    # Per-programme override first, then institute-wide setting
+    mode = programme.get("enrolment_mode") or "global"
+    if mode == "global":
+        mode = site_settings.get("enrolment_mode") or "self"
+    if mode == "contact" and user.get("role") not in ("admin", "lecturer"):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Online enrolment is currently closed for this programme — please contact the institute to enrol",
+        )
     if programme.get("status") != "published" and user.get("role") not in ("admin", "lecturer"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Programme not available")
 

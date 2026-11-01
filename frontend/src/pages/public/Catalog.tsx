@@ -6,6 +6,8 @@ import type { Programme } from "../../lib/types";
 import { EmptyState, Input, LoadingBlock } from "../../components/ui";
 import { useRealtime } from "../../lib/realtime";
 import { HeroDecor } from "../../components/HeroDecor";
+import { effectiveEnrolMode } from "../../lib/enrol";
+import { useAuth } from "../../store/auth";
 
 const copy: Record<string, { title: string; subtitle: string }> = {
   class: { title: "Classes", subtitle: "Short, focused classes to quickly pick up new skills." },
@@ -14,6 +16,7 @@ const copy: Record<string, { title: string; subtitle: string }> = {
 };
 
 export default function Catalog({ type }: { type: "class" | "course" | "diploma" }) {
+  const { settings } = useAuth();
   const [items, setItems] = useState<Programme[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
@@ -73,9 +76,13 @@ export default function Catalog({ type }: { type: "class" | "course" | "diploma"
                   <h3 className="mt-2 font-bold group-hover:text-primary">{p.title}</h3>
                   <p className="mt-1 line-clamp-2 text-sm text-muted">{p.summary}</p>
                   <div className="mt-4 flex items-center justify-between">
-                    <span className="font-extrabold text-primary">
-                      {p.is_free || p.price === 0 ? "Free" : `${p.currency || "USD"} ${p.price}`}
-                    </span>
+                    {effectiveEnrolMode(p, settings) === "contact" ? (
+                      <span className="font-extrabold text-primary">Contact us</span>
+                    ) : (
+                      <span className="font-extrabold text-primary">
+                        {p.is_free || p.price === 0 ? "Free" : `${p.currency || "USD"} ${p.price}`}
+                      </span>
+                    )}
                     <ArrowRight className="h-4 w-4 text-primary transition group-hover:translate-x-1" />
                   </div>
                 </div>

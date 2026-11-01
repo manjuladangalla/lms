@@ -7,6 +7,8 @@ import { useAuth } from "../../store/auth";
 import { Alert, Badge, Button, Card, LoadingBlock, Modal, Spinner } from "../../components/ui";
 import { PromoQuote } from "../../components/PromoQuote";
 import { HeroDecor } from "../../components/HeroDecor";
+import EnrolContactModal from "../../components/EnrolContactModal";
+import { effectiveEnrolMode } from "../../lib/enrol";
 import { ApiError } from "../../lib/api";
 
 export default function ProgrammeDetail() {
@@ -22,6 +24,7 @@ export default function ProgrammeDetail() {
   const [scopeBuy, setScopeBuy] = useState<{ type: "subject" | "lesson"; id: string; title: string; price: number } | null>(null);
   const [promoCode, setPromoCode] = useState<string | null>(null);
   const [scopePromo, setScopePromo] = useState<string | null>(null);
+  const [contactOpen, setContactOpen] = useState(false);
 
   const load = async () => {
     if (!slug) return;
@@ -49,7 +52,7 @@ export default function ProgrammeDetail() {
   const price = programme.price || 0;
   const isFree = programme.is_free || price === 0;
   const currency = programme.currency || settings?.currency || "USD";
-  const contactOnly = settings?.enrolment_mode === "contact";
+  const contactOnly = effectiveEnrolMode(programme, settings) === "contact";
   const mode = programme.pricing_mode || "once";
   const interval =
     programme.billing_interval === "weekly"
@@ -338,9 +341,18 @@ export default function ProgrammeDetail() {
 
         <div className="lg:col-span-1">
           <Card className="sticky top-24 p-6">
-            <p className="text-3xl font-extrabold text-primary">{priceHeadline}</p>
-            <p className="mt-1 text-sm text-muted">{priceBlurb}</p>
-            {!active && user && !isFree && (
+            {contactOnly ? (
+              <>
+                <p className="text-3xl font-extrabold text-primary">Enquire</p>
+                <p className="mt-1 text-sm text-muted">Contact the institute for fees and batch dates.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-3xl font-extrabold text-primary">{priceHeadline}</p>
+                <p className="mt-1 text-sm text-muted">{priceBlurb}</p>
+              </>
+            )}
+            {!active && user && !isFree && !contactOnly && (
               <>
                 <p className="mt-3 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                   Members save up to 100% on this course — apply a promo code too at checkout.
@@ -360,21 +372,11 @@ export default function ProgrammeDetail() {
               {contactOnly ? (
                 <>
                   <p className="rounded-lg bg-warning/10 px-3 py-2 text-xs font-medium text-warning">
-                    Online enrolment is closed — the institute enrols students directly. Send an enquiry and our team will get back to you.
+                    This programme is enrolled through the institute directly — reach out and our team will confirm your seat.
                   </p>
-                  <Link to={`/contact?subject=Enrolment enquiry — ${programme.title}`} className="btn-primary">
+                  <Button onClick={() => setContactOpen(true)}>
                     Contact us to enrol
-                  </Link>
-                  <a
-                    href={`https://wa.me/${(settings?.whatsapp_number || "").replace(/[^\d]/g, "")}?text=${encodeURIComponent(
-                      `Hello, I'd like to enrol in ${programme.title}.`
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`btn-ghost ${settings?.whatsapp_number ? "" : "hidden"}`}
-                  >
-                    Ask on WhatsApp
-                  </a>
+                  </Button>
                 </>
               ) : active ? (
                 <Link to={`/learn/${programme.id}`} className="btn-primary">
@@ -496,6 +498,8 @@ export default function ProgrammeDetail() {
           </div>
         )}
       </Modal>
+
+      <EnrolContactModal open={contactOpen} onClose={() => setContactOpen(false)} programmeTitle={programme.title} />
       </div>
     </div>
   );

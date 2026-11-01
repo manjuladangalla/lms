@@ -112,6 +112,7 @@ export interface Programme {
   status: string;
   pricing_mode?: "once" | "subscription" | "per_lesson" | "per_module";
   billing_interval?: "weekly" | "monthly" | "semester" | "yearly" | null;
+  enrolment_mode?: "global" | "self" | "contact";
   created_by?: string | null;
   final_exam_required?: boolean;
   assignment_weight?: number;

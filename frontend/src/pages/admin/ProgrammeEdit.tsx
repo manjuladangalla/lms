@@ -812,6 +812,19 @@ export default function AdminProgrammeEdit() {
                 </Select>
               </Field>
             )}
+            <Field
+              label="Enrolment"
+              hint="Contact only: hides the price and shows a contact button (WhatsApp / enquiry form) — staff enrols the student."
+            >
+              <Select
+                value={settingsForm.enrolment_mode || "global"}
+                onChange={(e) => setSettingsForm({ ...settingsForm, enrolment_mode: e.target.value as Programme["enrolment_mode"] })}
+              >
+                <option value="global">Follow site setting</option>
+                <option value="self">Self enrolment (show price)</option>
+                <option value="contact">Contact us only (hide price)</option>
+              </Select>
+            </Field>
             <Field label="Category">
               <Input value={settingsForm.category || ""} onChange={(e) => setSettingsForm({ ...settingsForm, category: e.target.value })} />
             </Field>

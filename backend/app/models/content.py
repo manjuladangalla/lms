@@ -34,6 +34,9 @@ class ProgrammeIn(BaseModel):
     assignment_weight: float = Field(default=40, ge=0, le=100)
     exam_weight: float = Field(default=60, ge=0, le=100)
     pass_percent: float = Field(default=50, ge=0, le=100)
+    # Enrolment per programme: "global" = follow institute setting, "self" = students
+    # enrol & pay online, "contact" = hide price, contact us only (staff enrols)
+    enrolment_mode: str = Field(default="global", pattern="^(global|self|contact)$")
 
 
 class SubjectIn(BaseModel):

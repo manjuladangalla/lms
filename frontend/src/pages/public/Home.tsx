@@ -6,11 +6,14 @@ import { bannerTheme } from "../../lib/banners";
 import { useRealtime } from "../../lib/realtime";
 import { LearnFlowDecor } from "../../components/LearnFlowDecor";
 import { Testimonials } from "../../components/Testimonials";
+import { effectiveEnrolMode } from "../../lib/enrol";
 import type { Banner, CounsellingSlot, MembershipPlan, Programme } from "../../lib/types";
 import { useAuth } from "../../store/auth";
 import { Card, LoadingBlock } from "../../components/ui";
 
 function ProgramCard({ p, onPreview }: { p: Programme; onPreview?: (p: Programme) => void }) {
+  const { settings } = useAuth();
+  const contactOnly = effectiveEnrolMode(p, settings) === "contact";
   return (
     <Link to={`/programmes/${p.slug}`} className="card group overflow-hidden transition hover:-translate-y-1 hover:shadow-soft">
       <div className="relative h-40 bg-gradient-to-br from-primary/80 via-primary2/70 to-accent/70">
@@ -37,7 +40,7 @@ function ProgramCard({ p, onPreview }: { p: Programme; onPreview?: (p: Programme
           <span className="badge bg-black/40 text-white backdrop-blur">
             {p.type === "class" ? "Class" : p.type === "course" ? "Course" : "Diploma"}
           </span>
-          {p.is_free || p.price === 0 ? <span className="badge bg-success text-white">Free</span> : null}
+          {!contactOnly && (p.is_free || p.price === 0) ? <span className="badge bg-success text-white">Free</span> : null}
         </div>
       </div>
       <div className="p-5">
@@ -49,9 +52,13 @@ function ProgramCard({ p, onPreview }: { p: Programme; onPreview?: (p: Programme
         <h3 className="mt-2 line-clamp-2 text-base font-bold group-hover:text-primary">{p.title}</h3>
         <p className="mt-1 line-clamp-2 text-sm text-muted">{p.summary}</p>
         <div className="mt-4 flex items-center justify-between">
-          <span className="text-lg font-extrabold text-primary">
-            {p.is_free || p.price === 0 ? "Free" : `${p.currency || "USD"} ${p.price}`}
-          </span>
+          {contactOnly ? (
+            <span className="text-lg font-extrabold text-primary">Contact us</span>
+          ) : (
+            <span className="text-lg font-extrabold text-primary">
+              {p.is_free || p.price === 0 ? "Free" : `${p.currency || "USD"} ${p.price}`}
+            </span>
+          )}
           <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
             View <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
           </span>
