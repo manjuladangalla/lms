@@ -13,6 +13,61 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+@router.get("/dashboard/counts")
+async def menu_counts(user: dict = Depends(get_current_user)):
+    """Small badge counts for the sidebar/top menu of each portal.
+
+    Only counts the sections the caller is allowed to open.
+    """
+    db = get_db()
+    role = user.get("role")
+    out: dict[str, int] = {}
+
+    if role in ("admin", "lecturer"):
+        enrol_q: dict = {}
+        if role != "admin":
+            # Lecturers see only their own courses
+            progs = await db.programmes.find(
+                {"$or": [{"created_by": None}, {"created_by": user["_id"]}]}
+            ).to_list(500)
+            ids = [p["_id"] for p in progs]
+            enrol_q["programme_id"] = {"$in": ids}
+        out["enrolments_pending"] = await db.enrolments.count_documents(
+            {**enrol_q, "status": {"$in": ["pending_acceptance", "pending_approval", "pending_verification"]}}
+        )
+        out["grading_queue"] = await db.exam_attempts.count_documents(
+            {
+                **({"programme_id": {"$in": enrol_q["programme_id"]["$in"]}} if enrol_q else {}),
+                "status": {"$in": ["grading", "submitted"]},
+                "$or": [{"essay_pending_count": {"$gt": 0}}, {"manual_grade": True}],
+            }
+        )
+        if role == "admin":
+            out["payments_pending"] = await db.payments.count_documents({"status": "awaiting_verification"})
+            out["messages_unread"] = await db.contact_messages.count_documents({"status": "new"})
+            out["links_pending"] = await db.parent_students.count_documents({"status": "pending"})
+            out["counselling_pending"] = await db.counselling_bookings.count_documents(
+                {"status": "booked", "slot_start": {"$gte": _now()}}
+            )
+    elif role == "student":
+        out["enrolments_awaiting"] = await db.enrolments.count_documents(
+            {"user_id": user["_id"], "status": "pending_acceptance"}
+        )
+    elif role == "parent":
+        links = await db.parent_students.find(
+            {"parent_id": user["_id"], "status": "active"}
+        ).to_list(100)
+        student_ids = [l["student_id"] for l in links]
+        out["enrolments_awaiting"] = (
+            await db.enrolments.count_documents(
+                {"user_id": {"$in": student_ids}, "status": "pending_acceptance"}
+            )
+            if student_ids
+            else 0
+        )
+    return out
+
+
 @router.get("/dashboard/student")
 async def student_dashboard(user: dict = Depends(get_current_user)):
     db = get_db()

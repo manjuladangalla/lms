@@ -99,8 +99,8 @@ export default function AdminSettings() {
           <Field label="Institute / Site name (full)" hint="Full name — certificates, copyright, emails and page titles">
             <Input value={form.site_name} onChange={(e) => setForm({ ...form, site_name: e.target.value })} />
           </Field>
-          <Field label="Short name (sidebar)" hint="Abbreviation shown in the side menu, e.g. AIL">
-            <Input value={form.short_name || ""} maxLength={20} onChange={(e) => setForm({ ...form, short_name: e.target.value })} />
+          <Field label="Short name (sidebar)" hint="Shown in menus/logo — up to 40 characters, font auto-sizes to fit">
+            <Input value={form.short_name || ""} maxLength={40} onChange={(e) => setForm({ ...form, short_name: e.target.value })} />
           </Field>
           <Field label="Tagline">
             <Input value={form.tagline || ""} onChange={(e) => setForm({ ...form, tagline: e.target.value })} />

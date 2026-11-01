@@ -81,15 +81,28 @@ function splitName(name: string): [string, string] {
   return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
 }
 
-export function Logo({ size = "md", variant = "full" }: { size?: "sm" | "md" | "lg"; variant?: "full" | "short" }) {
+/** Font size shrinks as the label gets longer so it never wraps/overflows. */
+function fitFontSize(text: string, size: "sm" | "md" | "lg"): string {
+  const len = (text || "").trim().length;
+  const ladder: Record<string, Record<string, string>> = {
+    lg: { s: "text-xl", m: "text-lg", l: "text-base", xl: "text-[0.95rem]" },
+    md: { s: "text-[0.95rem]", m: "text-[0.88rem]", l: "text-[0.8rem]", xl: "text-[0.72rem]" },
+    sm: { s: "text-[0.82rem]", m: "text-[0.76rem]", l: "text-[0.7rem]", xl: "text-[0.64rem]" },
+  };
+  const key = len <= 8 ? "s" : len <= 14 ? "m" : len <= 22 ? "l" : "xl";
+  return ladder[size][key];
+}
+
+export function Logo({ size = "md", variant = "full", mono = false }: { size?: "sm" | "md" | "lg"; variant?: "full" | "short"; mono?: boolean }) {
   const { settings } = useAuth();
   const logo = publicFileUrl(settings?.logo_url);
   const fullName = settings?.site_name || "LMS Institute";
   const short = (settings?.short_name || "").trim();
   const siteName = variant === "short" && short ? short : fullName;
-  const [line1, line2] = variant === "short" && short ? [short, ""] : splitName(fullName);
+  // mono: single line, single colour (footer) — otherwise the name splits into two tones
+  const [line1, line2] = mono ? [fullName, ""] : variant === "short" && short ? [short, ""] : splitName(fullName);
   const dim = size === "lg" ? "h-14 w-14" : size === "sm" ? "h-9 w-9" : "h-11 w-11";
-  const l1 = size === "lg" ? "text-xl" : size === "sm" ? "text-[0.82rem]" : "text-[0.95rem]";
+  const l1 = fitFontSize(line1, size);
   const l2 = size === "lg" ? "text-[0.72rem]" : "text-[0.62rem]";
   const icon = size === "sm" ? "h-4 w-4" : "h-5 w-5";
   return (
@@ -107,7 +120,7 @@ export function Logo({ size = "md", variant = "full" }: { size?: "sm" | "md" | "
           <GraduationCap className={icon} />
         </span>
       )}
-      <span className="flex min-w-0 flex-col text-left leading-[1.12]">
+      <span className="flex min-w-0 max-w-[14rem] flex-col text-left leading-[1.12]">
         <span className={`${l1} font-extrabold tracking-tight text-ink`}>{line1}</span>
         {line2 && (
           <span className={`${l2} font-bold uppercase tracking-[0.16em] text-muted`}>{line2}</span>
@@ -318,7 +331,7 @@ export function Footer() {
     <footer className="mt-16 border-t border-border bg-surface">
       <div className="container-x grid gap-8 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <Logo />
+          <Logo mono />
           <p className="mt-3 text-sm text-muted">{settings?.tagline || "Learn. Grow. Get Certified."}</p>
           <div className="mt-4 flex flex-wrap gap-3 text-xs text-muted">
             {settings?.facebook && <a href={settings.facebook}>Facebook</a>}

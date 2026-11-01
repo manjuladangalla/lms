@@ -23,23 +23,24 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../store/auth";
 import { Logo, ThemeSwitcher } from "../../components/layout";
+import { CountBadge, useMenuCounts } from "../../lib/menuCounts";
 
 const links = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true, roles: ["admin", "lecturer", "counselor"] },
   { to: "/admin/programmes", label: "Programmes", icon: BookOpen, roles: ["admin", "lecturer"] },
-  { to: "/admin/enrolments", label: "Enrolments", icon: ClipboardList, roles: ["admin", "lecturer"] },
-  { to: "/admin/families", label: "Families", icon: Baby, roles: ["admin"] },
-  { to: "/admin/payments", label: "Payments", icon: BadgeDollarSign, roles: ["admin"] },
+  { to: "/admin/enrolments", label: "Enrolments", icon: ClipboardList, roles: ["admin", "lecturer"], count: "enrolments_pending" },
+  { to: "/admin/families", label: "Families", icon: Baby, roles: ["admin"], count: "links_pending" },
+  { to: "/admin/payments", label: "Payments", icon: BadgeDollarSign, roles: ["admin"], count: "payments_pending" },
   { to: "/admin/students", label: "Users", icon: Users, roles: ["admin"] },
-  { to: "/admin/grading", label: "Grading Queue", icon: CheckSquare, roles: ["admin", "lecturer"] },
+  { to: "/admin/grading", label: "Grading Queue", icon: CheckSquare, roles: ["admin", "lecturer"], count: "grading_queue" },
   { to: "/admin/results", label: "Results", icon: ScrollText, roles: ["admin", "lecturer"] },
   { to: "/admin/certificates", label: "Certificates", icon: Award, roles: ["admin", "lecturer"] },
   { to: "/admin/plans", label: "Membership Plans", icon: FolderKanban, roles: ["admin"] },
   { to: "/admin/promotions", label: "Promotions", icon: Tag, roles: ["admin"] },
   { to: "/admin/banners", label: "Banners", icon: Image, roles: ["admin"] },
-  { to: "/admin/counselling", label: "Counselling", icon: HeartHandshake, roles: ["admin", "counselor"] },
+  { to: "/admin/counselling", label: "Counselling", icon: HeartHandshake, roles: ["admin", "counselor"], count: "counselling_pending" },
   { to: "/admin/pages", label: "Pages", icon: FileText, roles: ["admin"] },
-  { to: "/admin/messages", label: "Messages", icon: MessageSquare, roles: ["admin"] },
+  { to: "/admin/messages", label: "Messages", icon: MessageSquare, roles: ["admin"], count: "messages_unread" },
   { to: "/admin/settings", label: "Institute Settings", icon: Settings, roles: ["admin"] },
   { to: "/admin/system", label: "System", icon: Server, roles: ["admin"] },
 ];
@@ -48,6 +49,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const role = user?.role;
+  const counts = useMenuCounts(["payment.updated", "message.created", "parent_link.created", "counselling.booked"]);
 
   return (
     <div className="flex min-h-screen bg-bg">
@@ -70,7 +72,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 }
               >
                 <l.icon className="h-4 w-4" />
-                {l.label}
+                <span className="flex-1">{l.label}</span>
+                {l.count ? <CountBadge value={counts[l.count]} /> : null}
               </NavLink>
             ))}
         </nav>
@@ -108,6 +111,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               .map((l) => (
                 <NavLink key={l.to} to={l.to} end={l.end} className="nav-link whitespace-nowrap">
                   {l.label}
+                  {l.count && counts[l.count] ? (
+                    <span className="ml-1.5 inline-grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[10px] font-bold leading-none text-white">
+                      {counts[l.count]! > 99 ? "99+" : counts[l.count]}
+                    </span>
+                  ) : null}
                 </NavLink>
               ))}
           </nav>

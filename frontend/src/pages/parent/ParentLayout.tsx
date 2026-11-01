@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   Baby,
@@ -8,8 +8,7 @@ import {
   CalendarCheck,
 } from "lucide-react";
 import { useAuth } from "../../store/auth";
-import { api } from "../../lib/api";
-import type { Enrolment, Paged, ParentLink } from "../../lib/types";
+import { useMenuCounts } from "../../lib/menuCounts";
 
 const links = [
   { to: "/parent", label: "My Children", icon: Baby, end: true },
@@ -20,22 +19,8 @@ export default function ParentLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [pendingCount, setPendingCount] = useState(0);
-
-  const loadPending = useCallback(async () => {
-    try {
-      const res = await api.get<Paged<Enrolment>>("/parents/enrolments/awaiting");
-      setPendingCount(res.items.length);
-    } catch {
-      setPendingCount(0);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadPending();
-    const id = setInterval(loadPending, 60_000);
-    return () => clearInterval(id);
-  }, [loadPending]);
+  const counts = useMenuCounts(["enrolment.updated", "enrolment.created"]);
+  const pendingCount = counts.enrolments_awaiting || 0;
 
   const handleLogout = async () => {
     await logout();

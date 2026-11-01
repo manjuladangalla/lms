@@ -7,6 +7,7 @@ import { useAuth } from "../../store/auth";
 import { Badge, Button, Card, EmptyState, LoadingBlock, ProgressBar, StatCard } from "../../components/ui";
 import { Logo, ThemeSwitcher } from "../../components/layout";
 import { useRealtime } from "../../lib/realtime";
+import { useMenuCounts } from "../../lib/menuCounts";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -14,6 +15,7 @@ export default function Dashboard() {
   const [data, setData] = useState<SD | null>(null);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState<StudentNote[]>([]);
+  const counts = useMenuCounts(["note.created"]);
 
   useEffect(() => {
     api
@@ -88,8 +90,13 @@ export default function Dashboard() {
               { to: "/dashboard/membership", label: "Membership" },
               { to: "/dashboard/counselling", label: "Counselling" },
             ].map((l) => (
-              <Link key={l.to} to={l.to} className="btn-ghost">
+              <Link key={l.to} to={l.to} className="btn-ghost relative">
                 {l.label}
+                {l.to === "/dashboard" && counts.enrolments_awaiting ? (
+                  <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[10px] font-bold leading-none text-white">
+                    {counts.enrolments_awaiting}
+                  </span>
+                ) : null}
               </Link>
             ))}
           </nav>
