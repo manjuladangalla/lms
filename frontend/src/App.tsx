@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Navbar, Footer } from "./components/layout";
 import { Protected } from "./components/Protected";
+import WhatsAppFloat from "./components/WhatsAppFloat";
 import Home from "./pages/public/Home";
 import About from "./pages/public/About";
 import Catalog from "./pages/public/Catalog";
@@ -59,6 +60,7 @@ function PublicShell({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
+    <>
     <Routes>
       <Route path="/" element={<PublicShell><Home /></PublicShell>} />
       <Route path="/about" element={<PublicShell><About /></PublicShell>} />
@@ -132,5 +134,7 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    <WhatsAppFloat />
+    </>
   );
 }

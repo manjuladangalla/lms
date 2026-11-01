@@ -62,6 +62,11 @@ class SettingsIn(BaseModel):
     home_hero_title: str = ""
     home_hero_subtitle: str = ""
     certificate_issuer: str = ""
+    # "self" = students enrol & pay themselves; "contact" = contact-us-only, staff enrols
+    enrolment_mode: Literal["self", "contact"] = "self"
+    # Floating WhatsApp button (leave number empty to hide)
+    whatsapp_number: str = ""
+    whatsapp_message: str = "Hello, I'd like to know more about your programmes."
 
 
 class BannerIn(BaseModel):

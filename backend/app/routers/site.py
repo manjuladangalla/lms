@@ -35,6 +35,9 @@ DEFAULT_SETTINGS = {
     "home_hero_title": "Build Skills That Matter",
     "home_hero_subtitle": "Explore classes, courses and diploma programmes with expert lecturers and earn verified digital certificates.",
     "certificate_issuer": "",
+    "enrolment_mode": "self",
+    "whatsapp_number": "",
+    "whatsapp_message": "Hello, I'd like to know more about your programmes.",
 }
 
 

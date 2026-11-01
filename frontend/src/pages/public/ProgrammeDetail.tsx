@@ -49,6 +49,7 @@ export default function ProgrammeDetail() {
   const price = programme.price || 0;
   const isFree = programme.is_free || price === 0;
   const currency = programme.currency || settings?.currency || "USD";
+  const contactOnly = settings?.enrolment_mode === "contact";
   const mode = programme.pricing_mode || "once";
   const interval =
     programme.billing_interval === "weekly"
@@ -356,7 +357,26 @@ export default function ProgrammeDetail() {
             {error && <div className="mt-4"><Alert type="error">{error}</Alert></div>}
 
             <div className="mt-5 flex flex-col gap-2">
-              {active ? (
+              {contactOnly ? (
+                <>
+                  <p className="rounded-lg bg-warning/10 px-3 py-2 text-xs font-medium text-warning">
+                    Online enrolment is closed — the institute enrols students directly. Send an enquiry and our team will get back to you.
+                  </p>
+                  <Link to={`/contact?subject=Enrolment enquiry — ${programme.title}`} className="btn-primary">
+                    Contact us to enrol
+                  </Link>
+                  <a
+                    href={`https://wa.me/${(settings?.whatsapp_number || "").replace(/[^\d]/g, "")}?text=${encodeURIComponent(
+                      `Hello, I'd like to enrol in ${programme.title}.`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`btn-ghost ${settings?.whatsapp_number ? "" : "hidden"}`}
+                  >
+                    Ask on WhatsApp
+                  </a>
+                </>
+              ) : active ? (
                 <Link to={`/learn/${programme.id}`} className="btn-primary">
                   Continue Learning
                 </Link>
@@ -387,7 +407,7 @@ export default function ProgrammeDetail() {
                   ) : null}
                 </>
               )}
-              {!user && (
+              {!user && !contactOnly && (
                 <Button variant="ghost" onClick={() => navigate("/login")}>
                   Login to Enroll
                 </Button>

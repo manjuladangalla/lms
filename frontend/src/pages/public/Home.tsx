@@ -5,6 +5,7 @@ import { api, publicFileUrl } from "../../lib/api";
 import { bannerTheme } from "../../lib/banners";
 import { useRealtime } from "../../lib/realtime";
 import { LearnFlowDecor } from "../../components/LearnFlowDecor";
+import { Testimonials } from "../../components/Testimonials";
 import type { Banner, CounsellingSlot, MembershipPlan, Programme } from "../../lib/types";
 import { useAuth } from "../../store/auth";
 import { Card, LoadingBlock } from "../../components/ui";
@@ -317,6 +318,8 @@ export default function Home() {
           </div>
         )}
       </section>
+
+      <Testimonials />
 
       {plans.length > 0 && (
         <section className="border-y border-border bg-surface2/50 py-16">

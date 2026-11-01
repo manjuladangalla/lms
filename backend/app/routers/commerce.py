@@ -200,6 +200,14 @@ async def _enrolment_amount(db, enrolment: dict) -> tuple[float, str, str]:
 @router.post("/enrolments", response_model=dict)
 async def enrol(body: EnrolIn, user: dict = Depends(get_current_user)):
     db = get_db()
+    from app.routers.site import get_settings_doc
+
+    site_settings = await get_settings_doc(db)
+    if site_settings.get("enrolment_mode") == "contact" and user.get("role") not in ("admin", "lecturer"):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Online enrolment is currently closed — please contact the institute to enrol",
+        )
     programme = await db.programmes.find_one({"_id": body.programme_id})
     if not programme:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Programme not found")

@@ -40,6 +40,9 @@ export interface InstituteSettings {
   currency?: string;
   currencies?: string;
   footer_text?: string;
+  enrolment_mode?: "self" | "contact";
+  whatsapp_number?: string | null;
+  whatsapp_message?: string | null;
   about_body?: string;
   home_hero_title?: string;
   home_hero_subtitle?: string;

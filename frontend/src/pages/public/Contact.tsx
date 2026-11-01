@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Mail, MapPin, Phone, Send } from "lucide-react";
 import { api } from "../../lib/api";
 import { useAuth } from "../../store/auth";
@@ -8,7 +9,8 @@ import { ApiError } from "../../lib/api";
 
 export default function Contact() {
   const { settings } = useAuth();
-  const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
+  const [searchParams] = useSearchParams();
+  const [form, setForm] = useState({ name: "", email: "", phone: "", subject: searchParams.get("subject") || "", message: "" });
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");

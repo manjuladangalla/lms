@@ -198,6 +198,52 @@ export default function AdminSettings() {
       </Card>
 
       <Card className="mb-6 p-6">
+        <h2 className="mb-4 font-bold">Enrolment & WhatsApp</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            label="Enrolment mode"
+            hint="Self: students enrol & pay online. Contact: hide online enrolment — show the contact form only, staff enrols students."
+          >
+            <select
+              className="input"
+              value={form.enrolment_mode || "self"}
+              onChange={(e) => setForm({ ...form, enrolment_mode: e.target.value as "self" | "contact" })}
+            >
+              <option value="self">Self enrolment (online)</option>
+              <option value="contact">Contact us only</option>
+            </select>
+          </Field>
+          <Field label="WhatsApp number" hint="With country code, e.g. 94771234567. Leave empty to hide the button.">
+            <Input
+              value={form.whatsapp_number || ""}
+              onChange={(e) => setForm({ ...form, whatsapp_number: e.target.value })}
+              placeholder="94771234567"
+            />
+          </Field>
+          <div className="sm:col-span-2">
+            <Field label="WhatsApp pre-filled message">
+              <Textarea
+                rows={2}
+                value={form.whatsapp_message || ""}
+                onChange={(e) => setForm({ ...form, whatsapp_message: e.target.value })}
+                placeholder="Hello, I'd like to know more about your programmes."
+              />
+            </Field>
+          </div>
+        </div>
+        {form.whatsapp_number && (
+          <a
+            href={`https://wa.me/${(form.whatsapp_number || "").replace(/[^\d]/g, "")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex text-xs font-semibold text-[#25D366] hover:underline"
+          >
+            Test the WhatsApp link ↗
+          </a>
+        )}
+      </Card>
+
+      <Card className="mb-6 p-6">
         <h2 className="mb-4 font-bold">Payments</h2>
         <Field
           label="Manual payment instructions"
