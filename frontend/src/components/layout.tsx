@@ -81,25 +81,19 @@ function splitName(name: string): [string, string] {
   return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
 }
 
-/** Font size shrinks as the label gets longer, but always stays above the menu font (text-sm). */
-function fitFontSize(text: string, size: "sm" | "md" | "lg"): string {
-  const len = (text || "").trim().length;
-  const ladder: Record<string, Record<string, string>> = {
-    lg: { s: "text-3xl", m: "text-2xl", l: "text-xl", xl: "text-lg" },
-    md: { s: "text-2xl", m: "text-xl", l: "text-lg", xl: "text-base" },
-    sm: { s: "text-[1.1rem]", m: "text-[1rem]", l: "text-[0.9rem]", xl: "text-[0.8rem]" },
+/** Site name is 14px in the top bar (menus are text-sm) and 16px in the footer. */
+function fitFontSize(_text: string, size: "sm" | "md" | "lg"): string {
+  const ladder: Record<string, string> = {
+    lg: "text-[14px]",
+    md: "text-[14px]",
+    sm: "text-[12px]",
   };
-  const key = len <= 8 ? "s" : len <= 14 ? "m" : len <= 22 ? "l" : "xl";
-  return ladder[size][key];
+  return ladder[size];
 }
 
-/** Footer site name — always well above the menu font, and long names wrap. */
-function footerFontSize(text: string): string {
-  const len = (text || "").trim().length;
-  if (len <= 12) return "text-4xl sm:text-5xl lg:text-6xl";
-  if (len <= 20) return "text-3xl sm:text-4xl lg:text-5xl";
-  if (len <= 30) return "text-2xl sm:text-3xl lg:text-4xl";
-  return "text-lg sm:text-xl lg:text-2xl";
+/** Footer site name — 16px, and long names wrap over multiple lines. */
+function footerFontSize(_text: string): string {
+  return "text-[16px]";
 }
 
 export function Logo({ size = "md", variant = "full", mono = false }: { size?: "sm" | "md" | "lg"; variant?: "full" | "short"; mono?: boolean }) {
