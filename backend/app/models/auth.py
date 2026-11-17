@@ -11,6 +11,9 @@ class RegisterIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6, max_length=128)
     phone: str = Field(min_length=5, max_length=32)
+    # Optional identity details — students can add them later too
+    nic_number: str | None = Field(default=None, max_length=32)
+    passport_number: str | None = Field(default=None, max_length=32)
 
 
 class VerifyOtpIn(BaseModel):
@@ -50,6 +53,9 @@ class UserOut(BaseModel):
     bio: str | None = None
     google_id: str | None = None
     email_verified: bool = False
+    student_number: str | None = None
+    nic_number: str | None = None
+    passport_number: str | None = None
     created_at: datetime | None = None
 
 
@@ -61,6 +67,14 @@ class UserAdminUpdate(BaseModel):
     status: str | None = None
     specialty: str | None = Field(default=None, max_length=160)
     bio: str | None = Field(default=None, max_length=1000)
+    nic_number: str | None = Field(default=None, max_length=32)
+    passport_number: str | None = Field(default=None, max_length=32)
+
+
+def clean_identity(value: str | None) -> str | None:
+    """Trim an optional NIC/passport value; blank becomes None."""
+    text = (value or "").strip()
+    return text[:32] or None
 
 
 class PasswordChangeIn(BaseModel):

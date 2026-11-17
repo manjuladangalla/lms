@@ -27,6 +27,15 @@ async def lifespan(app: FastAPI):
             print(f"[migrate] renamed {result.modified_count} user(s): role instructor -> lecturer")
     except Exception as exc:
         print(f"[warn] role migration skipped: {exc}")
+    # Give every existing student a student number (STU-00001 …)
+    try:
+        from app.services.student_numbers import backfill_student_numbers
+
+        filled = await backfill_student_numbers(get_db())
+        if filled:
+            print(f"[migrate] generated student numbers for {filled} student(s)")
+    except Exception as exc:
+        print(f"[warn] student number backfill skipped: {exc}")
     # Auto-seed demo content (settings, users, English programmes, plans, banners…)
     # Idempotent: replaces old demo programmes with the three English ones on first start only.
     try:

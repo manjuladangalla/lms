@@ -4,29 +4,39 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.database import get_db
-from app.core.deps import require_admin
+from app.core.deps import require_admin, require_staff
 from app.core.security import hash_password
-from app.models.auth import UserAdminUpdate, UserOut
+from app.models.auth import UserAdminUpdate, UserOut, clean_identity
 from app.models.common import MessageOut, Page, serialize, serialize_many
+from app.services.student_numbers import next_student_number
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("", response_model=Page[UserOut])
 async def list_users(
-    _: dict = Depends(require_admin),
+    actor: dict = Depends(require_staff),
     q: str | None = None,
     role: str | None = None,
     status_: str | None = Query(None, alias="status"),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
 ):
+    """List users. Admins see every role (needed by the Users page); lecturers
+    only see students, so they can search for one when issuing a certificate."""
     db = get_db()
+    is_admin = actor["role"] == "admin"
     query: dict = {}
+    if not is_admin:
+        role = "student"
     if q:
         query["$or"] = [
             {"name": {"$regex": q, "$options": "i"}},
             {"email": {"$regex": q, "$options": "i"}},
+            {"phone": {"$regex": q, "$options": "i"}},
+            {"student_number": {"$regex": q, "$options": "i"}},
+            {"nic_number": {"$regex": q, "$options": "i"}},
+            {"passport_number": {"$regex": q, "$options": "i"}},
         ]
     if role:
         query["role"] = role
@@ -70,6 +80,10 @@ async def create_user(body: dict, _: dict = Depends(require_admin)):
         "bio": (body.get("bio") or None) if role == "counselor" else None,
         "google_id": None,
         "email_verified": True,
+        # Auto-generated for students only, e.g. STU-00001
+        "student_number": await next_student_number(db) if role == "student" else None,
+        "nic_number": clean_identity(body.get("nic_number")),
+        "passport_number": clean_identity(body.get("passport_number")),
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
     }
@@ -93,6 +107,9 @@ async def update_user(user_id: str, body: UserAdminUpdate, _: dict = Depends(req
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
     data = {k: v for k, v in body.model_dump(exclude_none=True).items()}
+    for key in ("nic_number", "passport_number"):
+        if key in data:
+            data[key] = clean_identity(data[key])  # blank clears the value
     if data:
         data["updated_at"] = datetime.now(timezone.utc)
         await db.users.update_one({"_id": user_id}, {"$set": data})

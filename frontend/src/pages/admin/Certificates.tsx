@@ -1,8 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, publicFileUrl } from "../../lib/api";
-import type { CertField, CertificateTemplate, Enrolment, Paged, Programme, Certificate } from "../../lib/types";
+import type { CertField, CertificateTemplate, Paged, Certificate } from "../../lib/types";
 import { useAuth } from "../../store/auth";
 import { Alert, Badge, Button, Field, Input, LoadingBlock, Modal, Pagination, Table } from "../../components/ui";
+
+/** A course the student finished that has no certificate yet. */
+type Candidate = {
+  id: string;
+  title: string;
+  type?: string | null;
+  progress_percent?: number;
+  completed_at?: string | null;
+};
+
+type StudentHit = { id: string; name: string; email: string; student_number?: string | null };
 
 const FIELD_LABELS: Record<string, string> = {
   heading: "Heading",
@@ -74,11 +85,11 @@ function CertificatesList() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [searchStudent, setSearchStudent] = useState("");
-  const [students, setStudents] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [students, setStudents] = useState<StudentHit[]>([]);
   const [selectedUser, setSelectedUser] = useState("");
-  const [programmes, setProgrammes] = useState<Programme[]>([]);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [optionsLoading, setOptionsLoading] = useState(false);
   const [selectedProg, setSelectedProg] = useState("");
-  const [enrolments, setEnrolments] = useState<Enrolment[]>([]);
   const [eligibility, setEligibility] = useState<{ eligible: boolean; reason: string } | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -106,28 +117,41 @@ function CertificatesList() {
       setStudents([]);
       return;
     }
-    const r = await api.get<{ items: { id: string; name: string; email: string }[] }>(
+    // Matches name, email, phone, student number, NIC or passport number
+    const r = await api.get<{ items: StudentHit[] }>(
       `/users?q=${encodeURIComponent(term)}&role=student&size=5`
     );
     setStudents(r.items);
   };
 
   const openIssue = async () => {
+    setSelectedUser("");
+    setSelectedProg("");
+    setCandidates([]);
+    setEligibility(null);
+    setSearchStudent("");
+    setStudents([]);
+    setError("");
     setOpen(true);
-    const progs = await api.get<{ items: Programme[] }>("/programmes?size=100");
-    setProgrammes(progs.items);
   };
 
   const onSelectUser = async (uid: string) => {
     setSelectedUser(uid);
     setEligibility(null);
-    try {
-      const all = await api.get<Paged<Enrolment>>("/enrolments?size=100");
-      setEnrolments(all.items.filter((e) => e.user_id === uid));
-    } catch {
-      setEnrolments([]); // lecturers cannot list all enrolments — summary skipped
-    }
     setSelectedProg("");
+    setCandidates([]);
+    setOptionsLoading(true);
+    try {
+      // Completed courses of this student that have no certificate yet
+      const r = await api.get<{ student: StudentHit; items: Candidate[] }>(
+        `/certificates/issue-options/${uid}`
+      );
+      setCandidates(r.items);
+    } catch {
+      setCandidates([]);
+    } finally {
+      setOptionsLoading(false);
+    }
   };
 
   const onSelectProgramme = async (pid: string) => {
@@ -152,6 +176,7 @@ function CertificatesList() {
       setOpen(false);
       setSelectedUser("");
       setSelectedProg("");
+      setCandidates([]);
       setEligibility(null);
       await load();
     } catch (e) {
@@ -234,7 +259,12 @@ function CertificatesList() {
             {(data?.items || []).map((c) => (
               <tr key={c.id} className="hover:bg-surface2/50">
                 <td className="px-4 py-3 font-mono text-sm font-semibold">{c.cert_no}</td>
-                <td className="px-4 py-3">{c.print_values?.student_name || c.student_name}</td>
+                <td className="px-4 py-3">
+                  {c.print_values?.student_name || c.student_name}
+                  {c.student_number && (
+                    <span className="ml-2 font-mono text-[11px] text-muted">{c.student_number}</span>
+                  )}
+                </td>
                 <td className="px-4 py-3">{c.print_values?.programme_name || c.programme_name}</td>
                 <td className="px-4 py-3 font-semibold">{c.final_grade != null ? `${c.final_grade}%` : "—"}</td>
                 <td className="px-4 py-3 text-muted">
@@ -279,8 +309,13 @@ function CertificatesList() {
       <Modal open={open} onClose={() => setOpen(false)} title="Issue Certificate">
         {error && <div className="mb-4"><Alert type="error">{error}</Alert></div>}
         <div className="space-y-4">
-          <Field label="Search student">
-            <Input value={searchStudent} onChange={(e) => searchUsers(e.target.value)} placeholder="Type student name or email..." />
+          <Field label="Search student" hint="Search by name, NIC, passport or student number.">
+            <Input
+              value={searchStudent}
+              onChange={(e) => searchUsers(e.target.value)}
+              placeholder="e.g. Kamal, 199012345678 or STU-00001"
+              autoComplete="off"
+            />
             {students.length > 0 && (
               <div className="mt-1 rounded-xl border border-border">
                 {students.map((s) => (
@@ -289,34 +324,72 @@ function CertificatesList() {
                     className={`block w-full px-3 py-2 text-left text-sm hover:bg-surface2 ${selectedUser === s.id ? "bg-primary/10" : ""}`}
                     onClick={() => {
                       setSelectedUser(s.id);
-                      setSearchStudent(`${s.name} (${s.email})`);
+                      setSearchStudent(
+                        s.student_number ? `${s.name} (${s.student_number})` : `${s.name} (${s.email})`
+                      );
                       setStudents([]);
                       onSelectUser(s.id);
                     }}
                   >
-                    {s.name} <span className="text-muted">· {s.email}</span>
+                    {s.name}{" "}
+                    <span className="text-muted">
+                      {s.student_number ? `· ${s.student_number}` : `· ${s.email}`}
+                    </span>
                   </button>
                 ))}
               </div>
             )}
           </Field>
-          <Field label="Programme">
-            <select className="input" value={selectedProg} onChange={(e) => onSelectProgramme(e.target.value)}>
-              <option value="">Select programme...</option>
-              {programmes.map((p) => (
-                <option key={p.id} value={p.id}>{p.title}</option>
-              ))}
-            </select>
-          </Field>
+
+          {!selectedUser && (
+            <p className="rounded-xl bg-surface2 p-3 text-sm text-muted">
+              Select a student first — only their completed courses will be offered below.
+            </p>
+          )}
+
+          {selectedUser && (
+            <Field label="Course (completed, no certificate yet)">
+              {optionsLoading ? (
+                <LoadingBlock label="Loading courses..." />
+              ) : candidates.length === 0 ? (
+                <Alert type="warning">
+                  This student has no completed course awaiting a certificate. Certificates appear here
+                  once the course is 100% complete.
+                </Alert>
+              ) : (
+                <>
+                  <select
+                    className="input"
+                    value={selectedProg}
+                    onChange={(e) => onSelectProgramme(e.target.value)}
+                  >
+                    <option value="">Select course...</option>
+                    {candidates.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.title}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedProg &&
+                    (() => {
+                      const c = candidates.find((x) => x.id === selectedProg);
+                      if (!c) return null;
+                      return (
+                        <p className="mt-1.5 text-xs text-muted">
+                          Completed {c.completed_at ? new Date(c.completed_at).toLocaleDateString() : "—"}
+                          {typeof c.progress_percent === "number" ? ` · ${c.progress_percent}% progress` : ""}
+                        </p>
+                      );
+                    })()}
+                </>
+              )}
+            </Field>
+          )}
+
           {eligibility && (
             <Alert type={eligibility.eligible ? "success" : "warning"}>
               {eligibility.reason}
             </Alert>
-          )}
-          {enrolments.length > 0 && (
-            <div className="rounded-xl bg-surface2 p-3 text-sm text-muted">
-              Student's enrolments: {enrolments.map((e) => `${e.programme?.title || e.programme_id} (${e.progress_percent}%)`).join(", ")}
-            </div>
           )}
         </div>
         <div className="mt-5 flex justify-end gap-2">

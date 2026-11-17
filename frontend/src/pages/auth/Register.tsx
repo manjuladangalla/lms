@@ -10,7 +10,7 @@ import { HeroDecor } from "../../components/HeroDecor";
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "", phone: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", phone: "", nic: "", passport: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -19,7 +19,7 @@ export default function Register() {
     setBusy(true);
     setError("");
     try {
-      const res = await register(form.name, form.email, form.password, form.phone.trim());
+      const res = await register(form.name, form.email, form.password, form.phone.trim(), form.nic.trim(), form.passport.trim());
       if (res?.requires_verification) {
         navigate("/verify-otp", { state: { email: res.email, dev_otp: res.dev_otp }, replace: true });
       } else {
@@ -65,6 +65,30 @@ export default function Register() {
           <Field label="Password" hint="At least 6 characters">
             <Input type="password" required minLength={6} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="••••••••" />
           </Field>
+          <div className="rounded-xl border border-border bg-surface2/50 p-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+              Identity details <span className="normal-case">(optional)</span>
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="NIC number">
+                <Input
+                  maxLength={32}
+                  value={form.nic}
+                  onChange={(e) => setForm({ ...form, nic: e.target.value })}
+                  placeholder="e.g. 199012345678"
+                />
+              </Field>
+              <Field label="Passport number">
+                <Input
+                  maxLength={32}
+                  value={form.passport}
+                  onChange={(e) => setForm({ ...form, passport: e.target.value })}
+                  placeholder="e.g. N1234567"
+                />
+              </Field>
+            </div>
+            <p className="mt-1 text-xs text-muted">Your student number is generated automatically.</p>
+          </div>
           <Button type="submit" loading={busy} className="w-full">
             Register
           </Button>

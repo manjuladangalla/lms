@@ -742,6 +742,7 @@ async def _issue_certificate_for(db, user_id: str, programme_id: str, issued_by:
         "user_id": user_id,
         "programme_id": programme_id,
         "student_name": student["name"],
+        "student_number": student.get("student_number"),
         "programme_name": programme["title"],
         "programme_type": programme.get("type"),
         "completion_date": completion,
@@ -847,11 +848,70 @@ async def admin_list_certificates(user: dict = Depends(require_staff), page: int
         query["$or"] = [
             {"cert_no": {"$regex": q, "$options": "i"}},
             {"student_name": {"$regex": q, "$options": "i"}},
+            {"student_number": {"$regex": q, "$options": "i"}},
             {"programme_name": {"$regex": q, "$options": "i"}},
         ]
     total = await db.certificates.count_documents(query)
     cursor = db.certificates.find(query).sort("issued_at", -1).skip((page - 1) * size).limit(size)
     return Page[dict](items=serialize_many(await cursor.to_list(length=size)), total=total, page=page, size=size)
+
+
+@router.get("/certificates/issue-options/{user_id}")
+async def certificate_issue_options(user_id: str, staff: dict = Depends(require_staff)):
+    """Programmes a student has completed and for which no certificate exists yet.
+
+    Drives the "Programme" dropdown of the Issue Certificate modal.
+    """
+    from app.routers.content import _is_owner
+
+    db = get_db()
+    student = await db.users.find_one({"_id": user_id})
+    if not student:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Student not found")
+
+    enrolments = await db.enrolments.find(
+        {"user_id": user_id, "progress_percent": {"$gte": 100}}
+    ).to_list(length=500)
+    issued = {
+        c["programme_id"]
+        for c in await db.certificates.find({"user_id": user_id}).to_list(length=500)
+    }
+    pending_ids = [e["programme_id"] for e in enrolments if e.get("programme_id") not in issued]
+    programmes = (
+        await db.programmes.find({"_id": {"$in": pending_ids}}).to_list(length=500)
+        if pending_ids
+        else []
+    )
+    is_admin = staff.get("role") == "admin"
+    visible = {p["_id"]: p for p in programmes if is_admin or _is_owner(staff, p)}
+
+    items = []
+    for e in enrolments:
+        programme = visible.get(e.get("programme_id"))
+        if not programme:
+            continue
+        items.append(
+            {
+                "id": programme["_id"],
+                "title": programme.get("title"),
+                "type": programme.get("type"),
+                "progress_percent": e.get("progress_percent"),
+                "completed_at": e.get("completed_at"),
+            }
+        )
+    # Most recently completed first
+    items.sort(key=lambda i: str(i.get("completed_at") or ""), reverse=True)
+    return {
+        "student": {
+            "id": student["_id"],
+            "name": student.get("name"),
+            "email": student.get("email"),
+            "student_number": student.get("student_number"),
+            "nic_number": student.get("nic_number"),
+            "passport_number": student.get("passport_number"),
+        },
+        "items": items,
+    }
 
 
 @router.post("/certificates", response_model=dict)
@@ -1024,6 +1084,14 @@ async def verify_certificate(cert_no: str):
     else:
         cert = serialize(doc)
         cert.pop("qr_token", None)
+        if not cert.get("student_number"):
+            # Older certificates were issued before student numbers existed
+            owner = await db.users.find_one({"_id": doc.get("user_id")})
+            if owner:
+                cert["student_number"] = owner.get("student_number")
+                await db.certificates.update_one(
+                    {"_id": doc["_id"]}, {"$set": {"student_number": owner.get("student_number")}}
+                )
         result = VerifyOut(valid=True, certificate=cert, message="Certificate is valid")
     await set_cached(cache_key, result.model_dump(), ttl=600)
     return result

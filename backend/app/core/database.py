@@ -30,6 +30,10 @@ def get_db() -> AsyncIOMotorDatabase:
 async def _ensure_indexes() -> None:
     await db.users.create_index("email", unique=True)
     await db.users.create_index("google_id")
+    # Student identity — searchable when issuing certificates
+    await db.users.create_index("student_number")
+    await db.users.create_index("nic_number")
+    await db.users.create_index("passport_number")
     await db.programmes.create_index("slug", unique=True)
     await db.subjects.create_index("programme_id")
     await db.lessons.create_index("subject_id")

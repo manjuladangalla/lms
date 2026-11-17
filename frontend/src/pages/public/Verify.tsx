@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { BadgeCheck, Calendar, Download, Printer, ShieldAlert, ShieldCheck, User, Award } from "lucide-react";
+import { BadgeCheck, Calendar, Download, Hash, Printer, ShieldAlert, ShieldCheck, User, Award } from "lucide-react";
 import { api, publicFileUrl } from "../../lib/api";
 import type { Certificate } from "../../lib/types";
 import { Alert, Badge, Button, Card, Input, LoadingBlock } from "../../components/ui";
@@ -110,11 +110,21 @@ export default function Verify() {
                     <p className="font-semibold">{c.student_name}</p>
                   </div>
                 </div>
+                {c.student_number && (
+                  <div className="flex items-center gap-3 rounded-xl bg-surface2 p-3">
+                    <Hash className="h-4 w-4 text-primary" />
+                    <div>
+                      <p className="text-xs text-muted">Student Number</p>
+                      <p className="font-semibold">{c.student_number}</p>
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center gap-3 rounded-xl bg-surface2 p-3">
                   <Award className="h-4 w-4 text-primary" />
                   <div>
                     <p className="text-xs text-muted">Programme</p>
                     <p className="font-semibold">{c.programme_name}</p>
+                    {c.programme_type && <p className="text-xs capitalize text-muted">{c.programme_type}</p>}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 rounded-xl bg-surface2 p-3">

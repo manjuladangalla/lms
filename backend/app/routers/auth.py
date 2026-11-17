@@ -24,10 +24,12 @@ from app.models.auth import (
     ResendOtpIn,
     ThemeIn,
     VerifyOtpIn,
+    clean_identity,
 )
 from app.models.common import MessageOut, serialize
 from app.models.auth import UserOut
 from app.services import email as email_service
+from app.services.student_numbers import next_student_number
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -107,6 +109,10 @@ async def register(body: RegisterIn):
         "avatar_url": None,
         "google_id": None,
         "email_verified": False,
+        # Auto-generated for every new student, e.g. STU-00001
+        "student_number": await next_student_number(db),
+        "nic_number": clean_identity(body.nic_number),
+        "passport_number": clean_identity(body.passport_number),
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
     }
@@ -199,6 +205,10 @@ async def me(user: dict = Depends(get_current_user)):
 async def update_me(body: dict, user: dict = Depends(get_current_user)):
     db = get_db()
     allowed = {k: v for k, v in body.items() if k in ("name", "phone", "avatar_url")}
+    # Optional identity details — a student may add/replace their own NIC or passport
+    for key in ("nic_number", "passport_number"):
+        if key in body:
+            allowed[key] = clean_identity(body.get(key))
     if user.get("role") == "counselor":
         allowed.update(
             {
@@ -257,6 +267,7 @@ async def _upsert_oauth_user(db, email: str, name: str, google_id: str, avatar: 
         "avatar_url": avatar,
         "google_id": google_id,
         "email_verified": True,
+        "student_number": await next_student_number(db),
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
     }

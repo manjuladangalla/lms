@@ -12,6 +12,10 @@ export interface User {
   bio?: string | null;
   status: string;
   theme: Theme;
+  /** Auto-generated for students, e.g. STU-00001 */
+  student_number?: string | null;
+  nic_number?: string | null;
+  passport_number?: string | null;
   created_at?: string;
 }
 
@@ -520,6 +524,7 @@ export interface Certificate {
   id: string;
   cert_no: string;
   student_name: string;
+  student_number?: string | null;
   programme_name: string;
   programme_type?: string;
   completion_date?: string;

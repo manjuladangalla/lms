@@ -8,7 +8,14 @@ interface AuthCtx {
   settings: InstituteSettings | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
-   register: (name: string, email: string, password: string, phone: string) => Promise<{ requires_verification: boolean; email: string; dev_otp?: string; user?: User }>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    phone: string,
+    nicNumber?: string,
+    passportNumber?: string,
+  ) => Promise<{ requires_verification: boolean; email: string; dev_otp?: string; user?: User }>;
   verifyOtp: (email: string, code: string) => Promise<User>;
   resendOtp: (email: string) => Promise<void>;
   googleLogin: (payload: { id_token?: string; code?: string; redirect_uri?: string }) => Promise<User>;
@@ -77,12 +84,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return tokens.user;
   };
 
-  const register = async (name: string, email: string, password: string, phone: string) => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    phone: string,
+    nicNumber?: string,
+    passportNumber?: string,
+  ) => {
     return api.post<{ requires_verification: boolean; email: string; dev_otp?: string }>("/auth/register", {
       name,
       email,
       password,
       phone,
+      nic_number: nicNumber?.trim() || null,
+      passport_number: passportNumber?.trim() || null,
     });
   };
 

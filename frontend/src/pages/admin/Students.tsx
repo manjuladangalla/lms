@@ -3,7 +3,7 @@ import { api, ApiError } from "../../lib/api";
 import type { Paged, User } from "../../lib/types";
 import { Alert, Badge, Button, Field, Input, LoadingBlock, Modal, Pagination, Select, Table, Textarea } from "../../components/ui";
 
-const empty = { name: "", email: "", password: "", role: "student", phone: "", specialty: "", bio: "" };
+const empty = { name: "", email: "", password: "", role: "student", phone: "", specialty: "", bio: "", nic_number: "", passport_number: "" };
 
 export default function AdminStudents() {
   const [data, setData] = useState<Paged<User> | null>(null);
@@ -17,6 +17,8 @@ export default function AdminStudents() {
   const [busy, setBusy] = useState(false);
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [profileForm, setProfileForm] = useState({ specialty: "", bio: "" });
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", phone: "", nic_number: "", passport_number: "" });
 
   const load = async () => {
     setLoading(true);
@@ -63,6 +65,32 @@ export default function AdminStudents() {
     setProfileUser(u);
   };
 
+  const openEdit = (u: User) => {
+    setError("");
+    setEditForm({
+      name: u.name || "",
+      phone: u.phone || "",
+      nic_number: u.nic_number || "",
+      passport_number: u.passport_number || "",
+    });
+    setEditUser(u);
+  };
+
+  const saveEdit = async () => {
+    if (!editUser) return;
+    setBusy(true);
+    setError("");
+    try {
+      await api.patch(`/users/${editUser.id}`, editForm);
+      setEditUser(null);
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Update failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const saveProfile = async () => {
     if (!profileUser) return;
     setBusy(true);
@@ -89,7 +117,7 @@ export default function AdminStudents() {
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
-        <Input className="max-w-xs" placeholder="Search name or email..." value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
+        <Input className="max-w-xs" placeholder="Search name, email, student no, NIC or passport..." value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
         <Select value={role} onChange={(e) => { setRole(e.target.value); setPage(1); }} className="w-44">
           <option value="">All roles</option>
           <option value="student">Student</option>
@@ -107,7 +135,14 @@ export default function AdminStudents() {
           <Table headers={["Name", "Email", "Role", "Status", "Joined", "Actions"]}>
             {(data?.items || []).map((u) => (
               <tr key={u.id} className="hover:bg-surface2/50">
-                <td className="px-4 py-3 font-medium">{u.name}</td>
+                <td className="px-4 py-3">
+                  <span className="font-medium">{u.name}</span>
+                  {u.student_number && (
+                    <span className="ml-2 inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-primary">
+                      {u.student_number}
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-muted">{u.email}</td>
                 <td className="px-4 py-3 capitalize">{u.role}</td>
                 <td className="px-4 py-3"><Badge status={u.status} /></td>
@@ -116,6 +151,9 @@ export default function AdminStudents() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-1.5">
+                    <Button variant="ghost" onClick={() => openEdit(u)}>
+                      Edit
+                    </Button>
                     {u.role === "counselor" && (
                       <Button variant="ghost" onClick={() => openProfile(u)}>
                         Profile
@@ -152,6 +190,45 @@ export default function AdminStudents() {
         </div>
       </Modal>
 
+      <Modal open={!!editUser} onClose={() => setEditUser(null)} title={editUser ? `Edit — ${editUser.name}` : ""}>
+        {error && <div className="mb-4"><Alert type="error">{error}</Alert></div>}
+        <div className="space-y-4">
+          <Field label="Name">
+            <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+          </Field>
+          <Field label="Phone">
+            <Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
+          </Field>
+          {editUser?.student_number && (
+            <Field label="Student number" hint="Generated automatically when the account is created.">
+              <Input value={editUser.student_number} readOnly className="font-mono" />
+            </Field>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="NIC number" hint="Optional — leave blank if not issued.">
+              <Input
+                maxLength={32}
+                value={editForm.nic_number}
+                onChange={(e) => setEditForm({ ...editForm, nic_number: e.target.value })}
+                placeholder="e.g. 199012345678"
+              />
+            </Field>
+            <Field label="Passport number" hint="Optional — leave blank if not issued.">
+              <Input
+                maxLength={32}
+                value={editForm.passport_number}
+                onChange={(e) => setEditForm({ ...editForm, passport_number: e.target.value })}
+                placeholder="e.g. N1234567"
+              />
+            </Field>
+          </div>
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setEditUser(null)}>Cancel</Button>
+          <Button loading={busy} onClick={saveEdit}>Save</Button>
+        </div>
+      </Modal>
+
       <Modal open={open} onClose={() => setOpen(false)} title="Add User">
         {error && <div className="mb-4"><Alert type="error">{error}</Alert></div>}
         <div className="space-y-4">
@@ -173,6 +250,32 @@ export default function AdminStudents() {
               <option value="admin">Admin</option>
             </Select>
           </Field>
+          {form.role === "student" && (
+            <div className="rounded-xl border border-border bg-surface2/50 p-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+                Student identity <span className="normal-case">(optional)</span>
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="NIC number">
+                  <Input
+                    maxLength={32}
+                    value={form.nic_number}
+                    onChange={(e) => setForm({ ...form, nic_number: e.target.value })}
+                    placeholder="e.g. 199012345678"
+                  />
+                </Field>
+                <Field label="Passport number">
+                  <Input
+                    maxLength={32}
+                    value={form.passport_number}
+                    onChange={(e) => setForm({ ...form, passport_number: e.target.value })}
+                    placeholder="e.g. N1234567"
+                  />
+                </Field>
+              </div>
+              <p className="mt-1 text-xs text-muted">The student number is generated automatically on creation.</p>
+            </div>
+          )}
           {form.role === "counselor" && (
             <>
               <Field label="Specialty" hint="Shown on the public counselling page.">
