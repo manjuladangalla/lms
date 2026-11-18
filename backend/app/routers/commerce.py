@@ -357,7 +357,17 @@ async def admin_list_enrolments(
     if status_:
         query["status"] = status_
     if q:
-        users = await db.users.find({"$or": [{"name": {"$regex": q, "$options": "i"}}, {"email": {"$regex": q, "$options": "i"}}]}).to_list(length=200)
+        users = await db.users.find(
+            {
+                "$or": [
+                    {"name": {"$regex": q, "$options": "i"}},
+                    {"email": {"$regex": q, "$options": "i"}},
+                    {"student_number": {"$regex": q, "$options": "i"}},
+                    {"nic_number": {"$regex": q, "$options": "i"}},
+                    {"passport_number": {"$regex": q, "$options": "i"}},
+                ]
+            }
+        ).to_list(length=200)
         ids = [u["_id"] for u in users]
         progs = await db.programmes.find({"title": {"$regex": q, "$options": "i"}}).to_list(length=200)
         pids = [p["_id"] for p in progs]
@@ -368,7 +378,16 @@ async def admin_list_enrolments(
     for e in items:
         u = await db.users.find_one({"_id": e["user_id"]})
         p = await db.programmes.find_one({"_id": e["programme_id"]})
-        e["student"] = {"id": u["_id"], "name": u["name"], "email": u["email"]} if u else None
+        e["student"] = (
+            {
+                "id": u["_id"],
+                "name": u["name"],
+                "email": u["email"],
+                "student_number": u.get("student_number"),
+            }
+            if u
+            else None
+        )
         e["programme"] = {"id": p["_id"], "title": p["title"], "type": p["type"], "price": p.get("price")} if p else None
         if e.get("requested_by"):
             r = await db.users.find_one({"_id": e["requested_by"]})

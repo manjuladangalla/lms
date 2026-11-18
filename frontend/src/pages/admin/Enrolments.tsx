@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
 import type { Enrolment, Paged, Programme, StudentNote } from "../../lib/types";
 import { Alert, Badge, Button, Card, Field, Input, LoadingBlock, Modal, Pagination, Select, Table, Textarea } from "../../components/ui";
+import { UserPicker, type PickerUser } from "../../components/UserPicker";
 import { useRealtime } from "../../lib/realtime";
 
 export default function AdminEnrolments() {
@@ -17,7 +18,7 @@ export default function AdminEnrolments() {
   const [error, setError] = useState("");
 
   const [enrolOpen, setEnrolOpen] = useState(false);
-  const [studentEmail, setStudentEmail] = useState("");
+  const [student, setStudent] = useState<PickerUser | null>(null);
   const [programmeId, setProgrammeId] = useState("");
   const [note, setNote] = useState("");
   const [programmes, setProgrammes] = useState<Programme[]>([]);
@@ -80,7 +81,7 @@ export default function AdminEnrolments() {
 
   const openEnrol = async () => {
     setEnrolOpen(true);
-    setStudentEmail("");
+    setStudent(null);
     setProgrammeId("");
     setNote("");
     setError("");
@@ -94,15 +95,17 @@ export default function AdminEnrolments() {
 
   const submitEnrol = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!student) return;
     setBusy(true);
     setError("");
     try {
       await api.post("/enrolments/staff", {
-        student_email: studentEmail.trim(),
+        student_id: student.id,
         programme_id: programmeId,
         note: note.trim() || null,
       });
       setEnrolOpen(false);
+      setStudent(null);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Enrolment failed");
@@ -263,13 +266,12 @@ export default function AdminEnrolments() {
 
       <Modal open={enrolOpen} onClose={() => setEnrolOpen(false)} title="Enrol a student">
         <form onSubmit={submitEnrol} className="space-y-4">
-          <Field label="Student's email" hint="The student must already have an account.">
-            <Input
-              type="email"
-              required
-              value={studentEmail}
-              onChange={(e) => setStudentEmail(e.target.value)}
-              placeholder="student@example.com"
+          <Field label="Student" hint="Search by name, email, student number, NIC or passport.">
+            <UserPicker
+              value={student}
+              onChange={setStudent}
+              placeholder="e.g. Kamal, 199012345678 or STU-00001"
+              autoFocus
             />
           </Field>
           <Field label="Programme">
@@ -288,7 +290,7 @@ export default function AdminEnrolments() {
           </p>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setEnrolOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={busy} disabled={!studentEmail || !programmeId}>Send enrolment</Button>
+            <Button type="submit" loading={busy} disabled={!student || !programmeId}>Send enrolment</Button>
           </div>
         </form>
       </Modal>

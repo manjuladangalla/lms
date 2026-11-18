@@ -3,12 +3,13 @@ import { Link } from "react-router-dom";
 import { Baby, CalendarCheck, CheckCircle2, TrendingUp, XCircle } from "lucide-react";
 import { api } from "../../lib/api";
 import type { Enrolment, Paged, ParentLink } from "../../lib/types";
-import { Alert, Badge, Button, Card, Field, Input, LoadingBlock } from "../../components/ui";
+import { Alert, Badge, Button, Card, Field, LoadingBlock } from "../../components/ui";
+import { UserPicker, type PickerUser } from "../../components/UserPicker";
 
 export default function ParentDashboard() {
   const [links, setLinks] = useState<ParentLink[]>([]);
   const [pending, setPending] = useState<Enrolment[]>([]);
-  const [email, setEmail] = useState("");
+  const [child, setChild] = useState<PickerUser | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
@@ -36,13 +37,14 @@ export default function ParentDashboard() {
 
   const addChild = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!child) return;
     setBusy(true);
     setError("");
     setOk("");
     try {
-      await api.post("/parents/children", { email: email.trim() });
+      await api.post("/parents/children", { email: child.email });
       setOk("Link request sent. It will be activated after admin approval.");
-      setEmail("");
+      setChild(null);
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add child");
@@ -104,17 +106,16 @@ export default function ParentDashboard() {
         <h2 className="mb-4 text-lg font-bold">Add a child</h2>
         <form onSubmit={addChild} className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
-            <Field label="Student's email">
-              <Input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="student@example.com"
+            <Field label="Student" hint="Search by name, email or student number.">
+              <UserPicker
+                endpoint="/parents/students/search"
+                value={child}
+                onChange={setChild}
+                placeholder="Type to search for the student..."
               />
             </Field>
           </div>
-          <Button type="submit" loading={busy} className="sm:w-auto">
+          <Button type="submit" loading={busy} disabled={!child} className="sm:w-auto">
             Send link request
           </Button>
         </form>

@@ -3,11 +3,19 @@ import { CalendarCheck } from "lucide-react";
 import { api } from "../../lib/api";
 import type { Paged, ParentLink, Programme } from "../../lib/types";
 import { Alert, Button, Card, Field, LoadingBlock, Select } from "../../components/ui";
+import { UserPicker, type PickerUser } from "../../components/UserPicker";
+
+const toPicker = (l: ParentLink): PickerUser => ({
+  id: l.student_id,
+  name: l.student?.name || l.student_id,
+  email: l.student?.email || "",
+  student_number: l.student?.student_number ?? null,
+});
 
 export default function ParentEnrol() {
   const [children, setChildren] = useState<ParentLink[]>([]);
   const [programmes, setProgrammes] = useState<Programme[]>([]);
-  const [studentId, setStudentId] = useState("");
+  const [child, setChild] = useState<PickerUser | null>(null);
   const [programmeId, setProgrammeId] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -25,7 +33,9 @@ export default function ParentEnrol() {
         const active = c.items.filter((l) => l.status === "active");
         setChildren(active);
         setProgrammes(p.items);
-        if (active[0]) setStudentId(active[0].student_id);
+        if (active[0]) {
+          setChild(toPicker(active[0]));
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load");
       } finally {
@@ -36,12 +46,13 @@ export default function ParentEnrol() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!child) return;
     setBusy(true);
     setError("");
     setOk("");
     try {
       await api.post("/parents/enrolments", {
-        student_id: studentId,
+        student_id: child.id,
         programme_id: programmeId,
         note: note.trim() || null,
       });
@@ -82,17 +93,13 @@ export default function ParentEnrol() {
 
       <Card className="p-6">
         <form onSubmit={submit} className="space-y-4">
-          <Field label="Child">
-            <Select value={studentId} onChange={(e) => setStudentId(e.target.value)} required>
-              <option value="" disabled>
-                Select a child
-              </option>
-              {children.map((c) => (
-                <option key={c.id} value={c.student_id}>
-                  {c.student?.name || c.student_id} ({c.student?.email})
-                </option>
-              ))}
-            </Select>
+          <Field label="Child" hint="Search among your linked children.">
+            <UserPicker
+              localOptions={children.map(toPicker)}
+              value={child}
+              onChange={setChild}
+              placeholder="Type your child's name or student number..."
+            />
           </Field>
           <Field label="Programme">
             <Select value={programmeId} onChange={(e) => setProgrammeId(e.target.value)} required>
@@ -114,7 +121,7 @@ export default function ParentEnrol() {
               placeholder="Anything the institute should know..."
             />
           </Field>
-          <Button type="submit" loading={busy} disabled={!studentId || !programmeId} className="w-full">
+          <Button type="submit" loading={busy} disabled={!child || !programmeId} className="w-full">
             Request enrolment
           </Button>
         </form>

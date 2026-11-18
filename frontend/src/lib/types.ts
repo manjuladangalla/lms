@@ -177,7 +177,7 @@ export interface ParentLink {
   reason?: string | null;
   created_at?: string;
   parent?: { id: string; name: string; email?: string } | null;
-  student?: { id: string; name: string; email?: string; active_enrolments?: number; pending_enrolments?: number } | null;
+  student?: { id: string; name: string; email?: string; student_number?: string | null; active_enrolments?: number; pending_enrolments?: number } | null;
 }
 
 export interface MembershipPlan {

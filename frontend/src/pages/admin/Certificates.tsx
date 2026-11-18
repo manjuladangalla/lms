@@ -3,6 +3,7 @@ import { api, ApiError, publicFileUrl } from "../../lib/api";
 import type { CertField, CertificateTemplate, Paged, Certificate } from "../../lib/types";
 import { useAuth } from "../../store/auth";
 import { Alert, Badge, Button, Field, Input, LoadingBlock, Modal, Pagination, Table } from "../../components/ui";
+import { UserPicker, type PickerUser } from "../../components/UserPicker";
 
 /** A course the student finished that has no certificate yet. */
 type Candidate = {
@@ -14,7 +15,6 @@ type Candidate = {
 };
 
 type StudentHit = { id: string; name: string; email: string; student_number?: string | null };
-
 const FIELD_LABELS: Record<string, string> = {
   heading: "Heading",
   institute_name: "Institute name",
@@ -84,9 +84,7 @@ function CertificatesList() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-  const [searchStudent, setSearchStudent] = useState("");
-  const [students, setStudents] = useState<StudentHit[]>([]);
-  const [selectedUser, setSelectedUser] = useState("");
+  const [picked, setPicked] = useState<PickerUser | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [optionsLoading, setOptionsLoading] = useState(false);
   const [selectedProg, setSelectedProg] = useState("");
@@ -111,33 +109,16 @@ function CertificatesList() {
     load();
   }, [q, page]);
 
-  const searchUsers = async (term: string) => {
-    setSearchStudent(term);
-    if (term.length < 2) {
-      setStudents([]);
-      return;
-    }
-    // Matches name, email, phone, student number, NIC or passport number
-    const r = await api.get<{ items: StudentHit[] }>(
-      `/users?q=${encodeURIComponent(term)}&role=student&size=5`
-    );
-    setStudents(r.items);
-  };
-
   const openIssue = async () => {
-    setSelectedUser("");
+    setPicked(null);
     setSelectedProg("");
     setCandidates([]);
     setEligibility(null);
-    setSearchStudent("");
-    setStudents([]);
     setError("");
     setOpen(true);
   };
 
   const onSelectUser = async (uid: string) => {
-    setSelectedUser(uid);
-    setEligibility(null);
     setSelectedProg("");
     setCandidates([]);
     setOptionsLoading(true);
@@ -153,6 +134,18 @@ function CertificatesList() {
       setOptionsLoading(false);
     }
   };
+
+  const onPick = (u: PickerUser | null) => {
+    setPicked(u);
+    setEligibility(null);
+    if (u) onSelectUser(u.id);
+    else {
+      setSelectedProg("");
+      setCandidates([]);
+    }
+  };
+
+  const selectedUser = picked?.id || "";
 
   const onSelectProgramme = async (pid: string) => {
     setSelectedProg(pid);
@@ -174,7 +167,7 @@ function CertificatesList() {
     try {
       await api.post("/certificates", { user_id: selectedUser, programme_id: selectedProg });
       setOpen(false);
-      setSelectedUser("");
+      setPicked(null);
       setSelectedProg("");
       setCandidates([]);
       setEligibility(null);
@@ -310,35 +303,12 @@ function CertificatesList() {
         {error && <div className="mb-4"><Alert type="error">{error}</Alert></div>}
         <div className="space-y-4">
           <Field label="Search student" hint="Search by name, NIC, passport or student number.">
-            <Input
-              value={searchStudent}
-              onChange={(e) => searchUsers(e.target.value)}
+            <UserPicker
+              value={picked}
+              onChange={onPick}
               placeholder="e.g. Kamal, 199012345678 or STU-00001"
-              autoComplete="off"
+              autoFocus
             />
-            {students.length > 0 && (
-              <div className="mt-1 rounded-xl border border-border">
-                {students.map((s) => (
-                  <button
-                    key={s.id}
-                    className={`block w-full px-3 py-2 text-left text-sm hover:bg-surface2 ${selectedUser === s.id ? "bg-primary/10" : ""}`}
-                    onClick={() => {
-                      setSelectedUser(s.id);
-                      setSearchStudent(
-                        s.student_number ? `${s.name} (${s.student_number})` : `${s.name} (${s.email})`
-                      );
-                      setStudents([]);
-                      onSelectUser(s.id);
-                    }}
-                  >
-                    {s.name}{" "}
-                    <span className="text-muted">
-                      {s.student_number ? `· ${s.student_number}` : `· ${s.email}`}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
           </Field>
 
           {!selectedUser && (

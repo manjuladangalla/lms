@@ -28,7 +28,13 @@ async def _hydrate_student(db, student_id: str) -> dict | None:
     u = await db.users.find_one({"_id": student_id})
     if not u:
         return None
-    return {"id": u["_id"], "name": u["name"], "email": u["email"], "role": u.get("role")}
+    return {
+        "id": u["_id"],
+        "name": u["name"],
+        "email": u["email"],
+        "role": u.get("role"),
+        "student_number": u.get("student_number"),
+    }
 
 
 async def _hydrate_parent(db, parent_id: str) -> dict | None:
@@ -39,6 +45,38 @@ async def _hydrate_parent(db, parent_id: str) -> dict | None:
 
 
 # ---------------- Parent: children ----------------
+
+@router.get("/students/search")
+async def search_students(q: str = "", parent: dict = Depends(require_parent)):
+    """Search students when adding a child (parents cannot use /users).
+
+    Matches name, email, student number, NIC or passport number.
+    """
+    db = get_db()
+    query: dict = {"role": "student"}
+    term = (q or "").strip()
+    if term:
+        query["$or"] = [
+            {"name": {"$regex": term, "$options": "i"}},
+            {"email": {"$regex": term, "$options": "i"}},
+            {"student_number": {"$regex": term, "$options": "i"}},
+            {"nic_number": {"$regex": term, "$options": "i"}},
+            {"passport_number": {"$regex": term, "$options": "i"}},
+        ]
+    users = await db.users.find(query).sort("name", 1).to_list(length=10)
+    return {
+        "items": [
+            {
+                "id": u["_id"],
+                "name": u.get("name"),
+                "email": u.get("email"),
+                "student_number": u.get("student_number"),
+                "phone": u.get("phone"),
+            }
+            for u in users
+        ]
+    }
+
 
 @router.get("/children", response_model=Page[dict])
 async def my_children(parent: dict = Depends(require_parent)):

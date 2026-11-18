@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
 import type { Paged, ParentLink } from "../../lib/types";
-import { Alert, Badge, Button, Card, Field, Input, LoadingBlock, Modal, Pagination, Table, Textarea } from "../../components/ui";
+import { Alert, Badge, Button, Card, Field, LoadingBlock, Modal, Pagination, Table, Textarea } from "../../components/ui";
+import { UserPicker, type PickerUser } from "../../components/UserPicker";
 
 export default function AdminFamilies() {
   const [data, setData] = useState<Paged<ParentLink> | null>(null);
@@ -12,8 +13,8 @@ export default function AdminFamilies() {
   const [busy, setBusy] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [parentEmail, setParentEmail] = useState("");
-  const [studentEmail, setStudentEmail] = useState("");
+  const [parent, setParent] = useState<PickerUser | null>(null);
+  const [student, setStudent] = useState<PickerUser | null>(null);
 
   const [reasonTarget, setReasonTarget] = useState<ParentLink | null>(null);
   const [reason, setReason] = useState("");
@@ -55,16 +56,17 @@ export default function AdminFamilies() {
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!parent || !student) return;
     setBusy(true);
     setError("");
     try {
       await api.post("/parents/links", {
-        parent_email: parentEmail.trim(),
-        student_email: studentEmail.trim(),
+        parent_email: parent.email,
+        student_email: student.email,
       });
       setCreateOpen(false);
-      setParentEmail("");
-      setStudentEmail("");
+      setParent(null);
+      setStudent(null);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Create failed");
@@ -141,15 +143,25 @@ export default function AdminFamilies() {
 
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Link parent & student">
         <form onSubmit={create} className="space-y-4">
-          <Field label="Parent's email" hint="Parent account must already exist (role: parent).">
-            <Input type="email" required value={parentEmail} onChange={(e) => setParentEmail(e.target.value)} placeholder="parent@example.com" />
+          <Field label="Parent" hint="Search parents by name or email — the account must have role: parent.">
+            <UserPicker
+              role="parent"
+              value={parent}
+              onChange={setParent}
+              placeholder="Type parent name or email..."
+              autoFocus
+            />
           </Field>
-          <Field label="Student's email">
-            <Input type="email" required value={studentEmail} onChange={(e) => setStudentEmail(e.target.value)} placeholder="student@example.com" />
+          <Field label="Student" hint="Search by name, email, student number, NIC or passport.">
+            <UserPicker
+              value={student}
+              onChange={setStudent}
+              placeholder="e.g. Kamal, 199012345678 or STU-00001"
+            />
           </Field>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={busy}>Create link</Button>
+            <Button type="submit" loading={busy} disabled={!parent || !student}>Create link</Button>
           </div>
         </form>
       </Modal>
